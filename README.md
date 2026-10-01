@@ -31,15 +31,17 @@ O resultado fica em `build/windows-x64/dxgi.dll` com os arquivos auxiliares em `
 
 Faça backup de qualquer `dxgi.dll` já presente no diretório do executável antes de instalar. Copie `dxgi.dll` e a pasta `NeuralFX` juntos para o diretório que contém `eurotrucks2.exe`, normalmente `bin/win_x64` dentro da instalação do ETS2. Não substitua o DXGI do Windows nem altere o executável do jogo. A confirmação de carregamento é o arquivo `NeuralFX/logs/neuralfx.log` nesse diretório.
 
-O arquivo `NeuralFX/neuralfx.ini` começa com:
+O arquivo `NeuralFX/neuralfx.ini` distribuído usa:
 
 ```ini
 enabled=false
-mode=rcas
-sharpness=0.65
+mode=photoreal
+photoreal_sharpness=0.30
+lut_strength=0.5
+lut_path=luts/film-cool.cube
 ```
 
-O efeito começa desligado. F10 alterna o estado em runtime. `mode=hook` testa apenas o encaminhamento; `copy` executa cópia GPU ida e volta; `fullscreen` executa o passe de cópia; `rcas` aplica o sharpening; `photoreal` executa grading, RCAS e acabamento. `sharpness` aceita 0 a 1 no modo `rcas`. A mudança de `mode` exige reiniciar o jogo.
+O efeito começa desligado. F10 alterna o estado em runtime. A LUT incluída fica em `NeuralFX/luts/film-cool.cube`. `mode=hook` testa apenas o encaminhamento; `copy` executa cópia GPU ida e volta; `fullscreen` executa o passe de cópia; `rcas` aplica o sharpening; `photoreal` executa grading, RCAS e acabamento. `sharpness` aceita 0 a 1 no modo `rcas`. A mudança de `mode` exige reiniciar o jogo.
 
 No modo `photoreal`, o backbuffer é copiado antes do `Present`. O primeiro draw processa cor e clarity e grava sRGB em um intermediário `R16G16B16A16_FLOAT`. O segundo draw aplica RCAS, grain/dither e grava no backbuffer. O modo pode ser ativado e desativado com F10. Os parâmetros `exposure_ev`, `contrast`, `saturation`, `clarity`, `highlight_boost`, `highlight_warmth`, `shadow_coolness`, `neural_strength`, `black_level`, `lut_strength`, `grain_strength`, `tone_strength`, `highlight_start`, `highlight_end` e `photoreal_sharpness` podem ser alterados no INI durante a execução; o plugin os recarrega em até um segundo. O valor inicial de `photoreal_sharpness` é 0.30. `lut_path` aponta para uma LUT `.cube` 3D de domínio 0 a 1, relativa à pasta `NeuralFX`, com dimensão de 2 a 64. A LUT é opcional e só atua quando `lut_strength` é maior que zero. O residual neural é opcional e só atua quando um produtor fornece uma SRV ao renderer e `neural_strength` é maior que zero; este protótipo ainda não contém esse produtor.
 

@@ -66,6 +66,8 @@ add_test(NAME neuralfx_shader_compile_tests COMMAND neuralfx_shader_compile_test
 add_custom_target(neuralfx_runtime_assets ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:dxgi>/NeuralFX/shaders
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/luts $<TARGET_FILE_DIR:dxgi>/NeuralFX/luts
     COMMAND ${CMAKE_COMMAND} -E copy
         ${CMAKE_CURRENT_SOURCE_DIR}/config/neuralfx.ini $<TARGET_FILE_DIR:dxgi>/NeuralFX/neuralfx.ini
     DEPENDS dxgi

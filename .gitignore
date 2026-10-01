@@ -1,0 +1,5 @@
+build/
+NeuralFX/logs/
+*.obj
+*.pdb
+*.ilk

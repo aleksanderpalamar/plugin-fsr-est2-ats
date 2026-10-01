@@ -1,0 +1,64 @@
+cmake_minimum_required(VERSION 3.24)
+project(NeuralFX_ETS2 LANGUAGES CXX)
+
+add_library(neuralfx_config STATIC src/config/config_parser.cpp)
+target_compile_features(neuralfx_config PUBLIC cxx_std_20)
+target_include_directories(neuralfx_config PUBLIC src)
+enable_testing()
+add_executable(neuralfx_config_tests tests/config_tests.cpp)
+target_link_libraries(neuralfx_config_tests PRIVATE neuralfx_config)
+add_test(NAME neuralfx_config_tests COMMAND neuralfx_config_tests)
+
+if(NOT WIN32)
+    return()
+endif()
+
+if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+    message(FATAL_ERROR "NeuralFX requires a Windows x64 toolchain")
+endif()
+
+if(MSVC)
+    enable_language(ASM_MASM)
+    set(DXGI_STUB_SOURCE src/dxgi/dxgi_stubs.asm)
+    set(D3DCOMPILER_LIBRARY d3dcompiler)
+else()
+    enable_language(ASM)
+    set(DXGI_STUB_SOURCE src/dxgi/dxgi_stubs_gnu.S)
+    set(D3DCOMPILER_LIBRARY d3dcompiler_47)
+endif()
+
+add_library(dxgi SHARED
+    src/dllmain.cpp
+    src/dxgi/dxgi_proxy.cpp
+    ${DXGI_STUB_SOURCE}
+    src/dxgi/dxgi.def
+    src/dxgi/swapchain_hook.cpp
+    src/renderer/renderer.cpp
+    src/renderer/resource_manager.cpp
+    src/renderer/context_state.cpp
+    src/renderer/gpu_profiler.cpp
+    src/common/logger.cpp
+    src/config/config.cpp
+)
+
+target_compile_features(dxgi PRIVATE cxx_std_20)
+target_compile_definitions(dxgi PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+if(MSVC)
+    target_compile_options(dxgi PRIVATE /W4 /permissive- /EHsc)
+else()
+    target_compile_options(dxgi PRIVATE -Wall -Wextra)
+endif()
+target_include_directories(dxgi PRIVATE src)
+target_link_libraries(dxgi PRIVATE neuralfx_config d3d11 ${D3DCOMPILER_LIBRARY} dxguid user32 kernel32)
+set_target_properties(dxgi PROPERTIES OUTPUT_NAME dxgi PREFIX "")
+
+add_executable(neuralfx_dxgi_smoke tests/dxgi_proxy_smoke.cpp)
+target_compile_features(neuralfx_dxgi_smoke PRIVATE cxx_std_20)
+target_link_libraries(neuralfx_dxgi_smoke PRIVATE dxguid kernel32)
+
+add_custom_command(TARGET dxgi POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:dxgi>/NeuralFX/shaders
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_CURRENT_SOURCE_DIR}/config/neuralfx.ini $<TARGET_FILE_DIR:dxgi>/NeuralFX/neuralfx.ini
+)

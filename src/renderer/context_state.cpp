@@ -16,7 +16,9 @@ ContextState::ContextState(ID3D11DeviceContext* context) noexcept : context_(con
     context_->GSGetShader(geometry_.GetAddressOf(), nullptr, nullptr);
     context_->HSGetShader(hull_.GetAddressOf(), nullptr, nullptr);
     context_->DSGetShader(domain_.GetAddressOf(), nullptr, nullptr);
-    context_->PSGetShaderResources(0, 1, resource_.GetAddressOf());
+    ID3D11ShaderResourceView* raw_resources[3]{};
+    context_->PSGetShaderResources(0, 3, raw_resources);
+    for (UINT index = 0; index < 3; ++index) resources_[index].Attach(raw_resources[index]);
     context_->PSGetSamplers(0, 1, sampler_.GetAddressOf());
     context_->PSGetConstantBuffers(0, 1, constants_.GetAddressOf());
     context_->IAGetInputLayout(layout_.GetAddressOf());
@@ -38,8 +40,9 @@ ContextState::~ContextState() {
     context_->GSSetShader(geometry_.Get(), nullptr, 0);
     context_->HSSetShader(hull_.Get(), nullptr, 0);
     context_->DSSetShader(domain_.Get(), nullptr, 0);
-    ID3D11ShaderResourceView* resource = resource_.Get();
-    context_->PSSetShaderResources(0, 1, &resource);
+    ID3D11ShaderResourceView* raw_resources[3]{};
+    for (UINT index = 0; index < 3; ++index) raw_resources[index] = resources_[index].Get();
+    context_->PSSetShaderResources(0, 3, raw_resources);
     ID3D11SamplerState* sampler = sampler_.Get();
     context_->PSSetSamplers(0, 1, &sampler);
     ID3D11Buffer* constants = constants_.Get();

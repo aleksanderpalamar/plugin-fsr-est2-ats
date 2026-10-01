@@ -1,5 +1,6 @@
 #include "renderer/resource_manager.hpp"
 
+
 namespace neuralfx {
 namespace {
 bool supported(DXGI_FORMAT format) noexcept {
@@ -13,9 +14,10 @@ bool supported(DXGI_FORMAT format) noexcept {
         return false;
     }
 }
+
 }
 
-HRESULT RenderResourceManager::initialize(ID3D11Device* device, IDXGISwapChain* swapchain) noexcept {
+HRESULT RenderResourceManager::initialize(ID3D11Device* device, IDXGISwapChain* swapchain, bool photoreal) noexcept {
     reset();
     if (!device || !swapchain) return E_POINTER;
     HRESULT result = swapchain->GetBuffer(0, IID_PPV_ARGS(&backbuffer_));
@@ -37,10 +39,29 @@ HRESULT RenderResourceManager::initialize(ID3D11Device* device, IDXGISwapChain* 
     width_ = description.Width;
     height_ = description.Height;
     format_ = description.Format;
+    if (!photoreal) return S_OK;
+    D3D11_TEXTURE2D_DESC stage{};
+    stage.Width = description.Width;
+    stage.Height = description.Height;
+    stage.MipLevels = 1;
+    stage.ArraySize = 1;
+    stage.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+    stage.SampleDesc.Count = 1;
+    stage.Usage = D3D11_USAGE_DEFAULT;
+    stage.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    result = device->CreateTexture2D(&stage, nullptr, &stage_);
+    if (FAILED(result)) return result;
+    result = device->CreateShaderResourceView(stage_.Get(), nullptr, &stage_input_);
+    if (FAILED(result)) return result;
+    result = device->CreateRenderTargetView(stage_.Get(), nullptr, &stage_output_);
+    if (FAILED(result)) return result;
     return S_OK;
 }
 
 void RenderResourceManager::reset() noexcept {
+    stage_input_.Reset();
+    stage_output_.Reset();
+    stage_.Reset();
     input_.Reset();
     output_.Reset();
     copy_.Reset();

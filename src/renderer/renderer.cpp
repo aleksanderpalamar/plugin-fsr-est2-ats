@@ -1,22 +1,14 @@
 #include "renderer/renderer.hpp"
 #include "renderer/context_state.hpp"
+#include "renderer/photoreal_constants.hpp"
 #include "common/logger.hpp"
 
 #include <windows.h>
-#include <d3dcompiler.h>
+#include <chrono>
 #include <string>
+#include <system_error>
 
 namespace neuralfx {
-namespace {
-HRESULT compile(const std::filesystem::path& path, const char* entry, const char* profile, ID3DBlob** blob) {
-    Microsoft::WRL::ComPtr<ID3DBlob> errors;
-    HRESULT result = D3DCompileFromFile(path.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE,
-        entry, profile, D3DCOMPILE_ENABLE_STRICTNESS, 0, blob, &errors);
-    if (FAILED(result) && errors) log(std::string_view(static_cast<const char*>(errors->GetBufferPointer()), errors->GetBufferSize()));
-    return result;
-}
-}
-
 Renderer& Renderer::instance() noexcept {
     static Renderer renderer;
     return renderer;
@@ -28,6 +20,30 @@ void Renderer::poll_hotkey() noexcept {
     key_down_ = down;
 }
 
+void Renderer::load_lut() {
+    lut_.reset();
+    if (config_.lut_path.empty()) return;
+    auto path = module_directory() / L"NeuralFX" / config_.lut_path;
+    if (FAILED(lut_.load(device_.Get(), path))) log("LUT unavailable: " + path.string());
+}
+
+void Renderer::poll_config() {
+    if (config_.mode != TestMode::Photoreal) return;
+    auto now = std::chrono::steady_clock::now();
+    if (now < next_config_poll_) return;
+    next_config_poll_ = now + std::chrono::seconds(1);
+    std::error_code error;
+    auto modified = std::filesystem::last_write_time(
+        module_directory() / L"NeuralFX" / L"neuralfx.ini", error);
+    if (error || modified == config_write_) return;
+    config_write_ = modified;
+    auto updated = load_config();
+    config_.photoreal = updated.photoreal;
+    config_.sharpness = updated.sharpness;
+    config_.lut_path = updated.lut_path;
+    load_lut();
+}
+
 void Renderer::present(IDXGISwapChain* swapchain) {
     std::unique_lock lock(mutex_, std::try_to_lock);
     if (!lock.owns_lock() || !swapchain) return;
@@ -36,6 +52,7 @@ void Renderer::present(IDXGISwapChain* swapchain) {
         active_swapchain_ = swapchain;
     }
     if (!initialized_ && !failed_) ensure_initialized(swapchain);
+    if (initialized_) poll_config();
     poll_hotkey();
     if (!initialized_ || !config_.enabled || config_.mode == TestMode::Hook) return;
     profiler_.poll(context_.Get());
@@ -48,7 +65,15 @@ void Renderer::present(IDXGISwapChain* swapchain) {
         profiler_.end(context_.Get());
         return;
     }
-    draw(config_.mode == TestMode::Rcas ? rcas_pixel_.Get() : copy_pixel_.Get());
+    if (config_.mode == TestMode::Photoreal) {
+        render_photoreal();
+    } else {
+        PhotorealConstants parameters{};
+        parameters.rcas_strength = config_.sharpness;
+        context_->UpdateSubresource(constants_.Get(), 0, nullptr, &parameters, 0, 0);
+        draw(config_.mode == TestMode::Rcas ? rcas_pixel_.Get() : copy_pixel_.Get(),
+            resources_.input(), resources_.output());
+    }
     profiler_.end(context_.Get());
 }
 
@@ -62,6 +87,11 @@ void Renderer::reset_unlocked() noexcept {
     resources_.reset();
     profiler_.reset();
     constants_.Reset();
+    sampler_.Reset();
+    neural_residual_.Reset();
+    lut_.reset();
+    finish_pixel_.Reset();
+    photoreal_pixel_.Reset();
     rcas_pixel_.Reset();
     copy_pixel_.Reset();
     vertex_.Reset();
@@ -70,10 +100,28 @@ void Renderer::reset_unlocked() noexcept {
     initialized_ = false;
     failed_ = false;
     active_swapchain_ = nullptr;
+    frame_index_ = 0.0f;
+    config_write_ = {};
+    next_config_poll_ = {};
+}
+
+void Renderer::set_neural_residual(ID3D11ShaderResourceView* resource) noexcept {
+    std::lock_guard lock(mutex_);
+    if (!resource) {
+        neural_residual_.Reset();
+        return;
+    }
+    Microsoft::WRL::ComPtr<ID3D11Device> owner;
+    resource->GetDevice(&owner);
+    if (owner.Get() != device_.Get()) return;
+    neural_residual_ = resource;
 }
 
 void Renderer::ensure_initialized(IDXGISwapChain* swapchain) {
     config_ = load_config();
+    std::error_code error;
+    config_write_ = std::filesystem::last_write_time(
+        module_directory() / L"NeuralFX" / L"neuralfx.ini", error);
     HRESULT result = initialize(swapchain);
     failed_ = FAILED(result);
     initialized_ = !failed_;
@@ -85,64 +133,34 @@ HRESULT Renderer::initialize(IDXGISwapChain* swapchain) {
     if (FAILED(result)) return result;
     device_->GetImmediateContext(&context_);
     if (!context_) return E_FAIL;
-    result = resources_.initialize(device_.Get(), swapchain);
+    result = resources_.initialize(device_.Get(), swapchain, config_.mode == TestMode::Photoreal);
     if (FAILED(result)) return result;
     result = compile_shaders();
     if (FAILED(result)) return result;
     D3D11_BUFFER_DESC description{};
-    description.ByteWidth = 16;
+    description.ByteWidth = sizeof(PhotorealConstants);
     description.Usage = D3D11_USAGE_DEFAULT;
     description.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     result = device_->CreateBuffer(&description, nullptr, &constants_);
-    if (SUCCEEDED(result) && FAILED(profiler_.initialize(device_.Get()))) log("GPU timing unavailable");
-    if (SUCCEEDED(result)) log("D3D11 renderer ready: " + std::to_string(resources_.width()) + "x" + std::to_string(resources_.height()));
-    if (SUCCEEDED(result)) log("UI isolation unavailable; post-processing affects HUD");
-    return result;
+    if (FAILED(result)) return result;
+    result = config_.mode == TestMode::Photoreal ? initialize_photoreal() : S_OK;
+    if (FAILED(result)) return result;
+    if (FAILED(profiler_.initialize(device_.Get()))) log("GPU timing unavailable");
+    log("D3D11 renderer ready: " + std::to_string(resources_.width()) + "x" + std::to_string(resources_.height()));
+    log("UI isolation unavailable; post-processing affects HUD");
+    return S_OK;
 }
 
-HRESULT Renderer::compile_shaders() {
-    auto path = module_directory() / L"NeuralFX" / L"shaders" / L"fullscreen.hlsl";
-    Microsoft::WRL::ComPtr<ID3DBlob> vertex_blob;
-    Microsoft::WRL::ComPtr<ID3DBlob> copy_blob;
-    Microsoft::WRL::ComPtr<ID3DBlob> rcas_blob;
-    HRESULT result = compile(path, "VSMain", "vs_5_0", vertex_blob.GetAddressOf());
+HRESULT Renderer::initialize_photoreal() {
+    D3D11_SAMPLER_DESC sampler{};
+    sampler.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    sampler.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    sampler.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    sampler.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+    sampler.MaxLOD = D3D11_FLOAT32_MAX;
+    HRESULT result = device_->CreateSamplerState(&sampler, &sampler_);
     if (FAILED(result)) return result;
-    result = compile(path, "CopyMain", "ps_5_0", copy_blob.GetAddressOf());
-    if (FAILED(result)) return result;
-    result = compile(path, "RcasMain", "ps_5_0", rcas_blob.GetAddressOf());
-    if (FAILED(result)) return result;
-    result = device_->CreateVertexShader(vertex_blob->GetBufferPointer(), vertex_blob->GetBufferSize(), nullptr, &vertex_);
-    if (FAILED(result)) return result;
-    result = device_->CreatePixelShader(copy_blob->GetBufferPointer(), copy_blob->GetBufferSize(), nullptr, &copy_pixel_);
-    if (FAILED(result)) return result;
-    return device_->CreatePixelShader(rcas_blob->GetBufferPointer(), rcas_blob->GetBufferSize(), nullptr, &rcas_pixel_);
-}
-
-void Renderer::draw(ID3D11PixelShader* pixel) {
-    D3D11_VIEWPORT viewport{0, 0, static_cast<float>(resources_.width()), static_cast<float>(resources_.height()), 0, 1};
-    D3D11_RECT scissor{0, 0, static_cast<LONG>(resources_.width()), static_cast<LONG>(resources_.height())};
-    struct Parameters { float amount; float padding[3]; } parameters{config_.sharpness, {0, 0, 0}};
-    context_->UpdateSubresource(constants_.Get(), 0, nullptr, &parameters, 0, 0);
-    ID3D11RenderTargetView* target = resources_.output();
-    ID3D11ShaderResourceView* input = resources_.input();
-    ID3D11Buffer* constants = constants_.Get();
-    context_->OMSetRenderTargets(1, &target, nullptr);
-    context_->OMSetBlendState(nullptr, nullptr, 0xffffffff);
-    context_->OMSetDepthStencilState(nullptr, 0);
-    context_->RSSetState(nullptr);
-    context_->RSSetViewports(1, &viewport);
-    context_->RSSetScissorRects(1, &scissor);
-    context_->IASetInputLayout(nullptr);
-    context_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    context_->VSSetShader(vertex_.Get(), nullptr, 0);
-    context_->HSSetShader(nullptr, nullptr, 0);
-    context_->DSSetShader(nullptr, nullptr, 0);
-    context_->GSSetShader(nullptr, nullptr, 0);
-    context_->PSSetShader(pixel, nullptr, 0);
-    context_->PSSetShaderResources(0, 1, &input);
-    context_->PSSetConstantBuffers(0, 1, &constants);
-    context_->Draw(3, 0);
-    ID3D11ShaderResourceView* empty = nullptr;
-    context_->PSSetShaderResources(0, 1, &empty);
+    load_lut();
+    return S_OK;
 }
 }

@@ -23,7 +23,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D11GeometryShader> geometry_;
     Microsoft::WRL::ComPtr<ID3D11HullShader> hull_;
     Microsoft::WRL::ComPtr<ID3D11DomainShader> domain_;
-    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> resource_;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> resources_[3];
     Microsoft::WRL::ComPtr<ID3D11SamplerState> sampler_;
     Microsoft::WRL::ComPtr<ID3D11Buffer> constants_;
     Microsoft::WRL::ComPtr<ID3D11InputLayout> layout_;

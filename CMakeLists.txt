@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 project(NeuralFX_ETS2 LANGUAGES CXX)
 
-add_library(neuralfx_config STATIC src/config/config_parser.cpp)
+add_library(neuralfx_config STATIC src/config/config_parser.cpp src/renderer/lut_data.cpp)
 target_compile_features(neuralfx_config PUBLIC cxx_std_20)
 target_include_directories(neuralfx_config PUBLIC src)
 enable_testing()
@@ -34,7 +34,9 @@ add_library(dxgi SHARED
     src/dxgi/dxgi.def
     src/dxgi/swapchain_hook.cpp
     src/renderer/renderer.cpp
+    src/renderer/renderer_passes.cpp
     src/renderer/resource_manager.cpp
+    src/renderer/lut_resource.cpp
     src/renderer/context_state.cpp
     src/renderer/gpu_profiler.cpp
     src/common/logger.cpp
@@ -56,9 +58,16 @@ add_executable(neuralfx_dxgi_smoke tests/dxgi_proxy_smoke.cpp)
 target_compile_features(neuralfx_dxgi_smoke PRIVATE cxx_std_20)
 target_link_libraries(neuralfx_dxgi_smoke PRIVATE dxguid kernel32)
 
-add_custom_command(TARGET dxgi POST_BUILD
+add_executable(neuralfx_shader_compile_tests tests/shader_compile.cpp)
+target_compile_features(neuralfx_shader_compile_tests PRIVATE cxx_std_20)
+target_link_libraries(neuralfx_shader_compile_tests PRIVATE ${D3DCOMPILER_LIBRARY})
+add_test(NAME neuralfx_shader_compile_tests COMMAND neuralfx_shader_compile_tests)
+
+add_custom_target(neuralfx_runtime_assets ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:dxgi>/NeuralFX/shaders
     COMMAND ${CMAKE_COMMAND} -E copy
         ${CMAKE_CURRENT_SOURCE_DIR}/config/neuralfx.ini $<TARGET_FILE_DIR:dxgi>/NeuralFX/neuralfx.ini
+    DEPENDS dxgi
 )
+add_dependencies(neuralfx_shader_compile_tests neuralfx_runtime_assets)

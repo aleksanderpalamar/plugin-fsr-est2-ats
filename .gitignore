@@ -1,5 +1,9 @@
 build/
 NeuralFX/logs/
+dist/
 *.obj
 *.pdb
 *.ilk
+session.md
+tarefa_shader.md
+instruction.md

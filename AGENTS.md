@@ -3,9 +3,57 @@
 Você deve respeitar as regras deste projeto em todas as alterações realizadas.
 Todo código produzido deve permanecer em conformidade com estas regras.
 
-## Interação
+## Interação com Claude
 
-Sempre que você for resolver um novo problema execute o comando `claude` para iniciar uma conversa (sessão) com claude, quando você sair da sessão do claude com `/quit` vai aparecer irá aparecer isso no terminal `claude --resume 71d001e1-c268-439e-b815-79592f2a947c` você deve salvar a sessão no arquivo `session.md` e assim que toda vez que você conseguir resolver algo por conta própria você deve voltar na sessão pois nela terá o contexto da conversa entre você e o claude. Dessa forma você conseguirá resolver as tarefas, sejam, correções ou novas features.
+Você é o agente principal responsável pela execução das tarefas deste projeto.
+
+Claude deve ser utilizado como um par técnico para discussão, revisão e investigação quando sua participação puder contribuir para a resolução da tarefa.
+
+Não consulte Claude automaticamente para toda tarefa.
+
+Consulte Claude quando ocorrer pelo menos uma das seguintes situações:
+
+- o problema não possuir uma solução clara após a análise inicial;
+- houver múltiplas abordagens arquiteturais relevantes;
+- a tarefa envolver uma mudança complexa ou de grande impacto;
+- você estiver investigando um bug cuja causa não esteja clara;
+- uma primeira tentativa de implementação ou correção não resolver o problema;
+- houver dúvida sobre uma decisão técnica importante;
+- for útil obter uma segunda análise antes de finalizar uma solução complexa.
+
+Para tarefas simples, mecânicas ou cuja solução esteja clara, resolva diretamente sem iniciar uma sessão com Claude.
+
+### Sessão
+
+Quando for necessário consultar Claude, execute:
+
+`claude`
+
+Mantenha a conversa focada na tarefa atual e forneça o contexto técnico necessário para que Claude possa colaborar na análise.
+
+Ao sair da sessão utilizando `/quit`, Claude apresentará um comando semelhante a:
+
+`claude --resume <session-id>`
+
+Salve o comando de retomada da sessão no arquivo `session.md`.
+
+Se uma sessão relacionada à tarefa atual já estiver registrada em `session.md`, reutilize essa sessão em vez de iniciar uma nova.
+
+### Ciclo de colaboração
+
+Durante uma tarefa complexa, você pode alternar entre:
+
+1. analisar o problema;
+2. discutir hipóteses ou alternativas com Claude;
+3. investigar e implementar a solução;
+4. executar testes e validações;
+5. retornar à mesma sessão do Claude quando surgir nova informação relevante ou quando uma segunda análise puder ajudar.
+
+Não é necessário retornar ao Claude após cada alteração ou descoberta.
+
+A implementação, validação e decisão final permanecem sob sua responsabilidade.
+
+Sugestões fornecidas por Claude não devem ser consideradas corretas automaticamente. Verifique-as utilizando o código existente, documentação, compilação, testes e demais mecanismos de validação do projeto.
 
 ## Princípios de arquitetura
 

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(NeuralFX_ETS2 LANGUAGES CXX)
+project(NeuralFX_ETS2 VERSION 1.0.0 LANGUAGES CXX)
 
 add_library(neuralfx_config STATIC src/config/config_parser.cpp src/renderer/lut_data.cpp)
 target_compile_features(neuralfx_config PUBLIC cxx_std_20)
@@ -73,3 +73,17 @@ add_custom_target(neuralfx_runtime_assets ALL
     DEPENDS dxgi
 )
 add_dependencies(neuralfx_shader_compile_tests neuralfx_runtime_assets)
+
+set(NEURALFX_PACKAGE_NAME FSR-ets2-ats-${PROJECT_VERSION})
+add_custom_target(neuralfx_package
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/dist
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_CURRENT_SOURCE_DIR}/tools/README $<TARGET_FILE_DIR:dxgi>/README
+    COMMAND ${CMAKE_COMMAND} -E tar cf
+        ${CMAKE_CURRENT_SOURCE_DIR}/dist/${NEURALFX_PACKAGE_NAME}.zip --format=zip
+        $<TARGET_FILE_NAME:dxgi> NeuralFX/neuralfx.ini NeuralFX/shaders
+        NeuralFX/luts README
+    WORKING_DIRECTORY $<TARGET_FILE_DIR:dxgi>
+    DEPENDS neuralfx_runtime_assets
+    VERBATIM
+)

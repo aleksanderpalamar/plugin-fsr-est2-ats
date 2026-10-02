@@ -10,9 +10,10 @@ Requisitos: Windows x64, Visual Studio 2022 com Desktop development with C++, Wi
 cmake -S . -B build -A x64
 cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
+cmake --build build --config Release --target neuralfx_package
 ```
 
-O resultado esperado é `build/Release/dxgi.dll` com a pasta `build/Release/NeuralFX`. O shader é compilado em runtime na inicialização para facilitar os testes. A DLL usa MASM x64 para preservar os argumentos das exports encaminhadas ao DXGI do Windows.
+O resultado esperado é `build/Release/dxgi.dll` com a pasta `build/Release/NeuralFX`. O pacote para instalação fica em `dist/FSR-ets2-ats-1.0.0.zip`. A versão do nome vem de `project(... VERSION ...)` no CMake. O shader é compilado em runtime na inicialização para facilitar os testes. A DLL usa MASM x64 para preservar os argumentos das exports encaminhadas ao DXGI do Windows.
 
 Antes de instalar, valide os exports no mesmo Windows com `powershell -ExecutionPolicy Bypass -File tools/check-exports.ps1 build/Release/dxgi.dll`. Se o script falhar, a DLL não está pronta para esse sistema.
 
@@ -23,6 +24,7 @@ Com Zig 0.16 e Ninja:
 ```sh
 ZIG_GLOBAL_CACHE_DIR=/tmp/neuralfx-zig-cache cmake -S . -B build/windows-x64 -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/zig-windows-x64.cmake -DCMAKE_BUILD_TYPE=Release
 ZIG_GLOBAL_CACHE_DIR=/tmp/neuralfx-zig-cache cmake --build build/windows-x64 --parallel 4
+ZIG_GLOBAL_CACHE_DIR=/tmp/neuralfx-zig-cache cmake --build build/windows-x64 --target neuralfx_package --parallel 4
 ```
 
 O resultado fica em `build/windows-x64/dxgi.dll` com os arquivos auxiliares em `build/windows-x64/NeuralFX`. Esse caminho foi compilado como PE x64 e passou por um teste de carregamento e `CreateDXGIFactory1` no Wine. Os hooks de `Present` e `ResizeBuffers` ainda exigem teste no ETS2.

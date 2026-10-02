@@ -4,7 +4,7 @@ Português
 
 1. Feche o jogo e faça backup de qualquer dxgi.dll e pasta NeuralFX já instaladas.
 2. Extraia dxgi.dll e a pasta NeuralFX para bin/win_x64, ao lado do executável do jogo.
-3. Ajuste NeuralFX/neuralfx.ini conforme desejar. F10 alterna o efeito durante o jogo.
+3. Ajuste NeuralFX/neuralfx.ini conforme desejar.
 4. Consulte NeuralFX/logs/neuralfx.log para confirmar o carregamento.
 
 O pacote inclui a LUT Film Cool, obtida da biblioteca gratuita EditClips.online.
@@ -13,7 +13,7 @@ English
 
 1. Close the game and back up any existing dxgi.dll and NeuralFX folder.
 2. Extract dxgi.dll and the NeuralFX folder to bin/win_x64, next to the game executable.
-3. Adjust NeuralFX/neuralfx.ini as desired. F10 toggles the effect in game.
+3. Adjust NeuralFX/neuralfx.ini as desired.
 4. Check NeuralFX/logs/neuralfx.log to confirm that the plugin loaded.
 
 The package includes the Film Cool LUT from the free EditClips.online library.

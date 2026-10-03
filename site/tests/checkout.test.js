@@ -47,14 +47,15 @@ test("enables both purchase links for a live Stripe Payment Link", () => {
   assert.equal(result.status.textContent, "Checkout seguro");
 });
 
-test("connects the current checkout configuration to both purchase links", () => {
+test("keeps the current checkout closed until the replacement ZIP is delivered", () => {
   const window = {};
   vm.runInNewContext(configScript, { window });
   const result = renderCheckout(window.NEURALFX_CHECKOUT);
   const paymentLink = "https://buy.stripe.com/dRm28l4OE7nT9SIcaGbAs01";
 
-  assert.deepEqual(result.links.map((link) => link.href), [paymentLink, paymentLink]);
-  assert.deepEqual(result.links.map((link) => link.disabled), [false, false]);
+  assert.equal(window.NEURALFX_CHECKOUT.paymentLink, paymentLink);
+  assert.deepEqual(result.links.map((link) => link.href), [undefined, undefined]);
+  assert.deepEqual(result.links.map((link) => link.disabled), [true, true]);
 });
 
 test("rejects external, insecure, and test-mode links", () => {

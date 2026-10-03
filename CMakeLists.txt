@@ -79,12 +79,14 @@ add_dependencies(neuralfx_shader_compile_tests neuralfx_runtime_assets)
 set(NEURALFX_PACKAGE_NAME FSR-ets2-ats-${PROJECT_VERSION})
 add_custom_target(neuralfx_package
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/dist
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_CURRENT_SOURCE_DIR}/tools/README $<TARGET_FILE_DIR:dxgi>/README
+    COMMAND ${CMAKE_COMMAND}
+        "-DNEURALFX_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
+        "-DNEURALFX_OUTPUT=$<TARGET_FILE_DIR:dxgi>/README"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/write_package_readme.cmake"
     COMMAND ${CMAKE_COMMAND} -E tar cf
         ${CMAKE_CURRENT_SOURCE_DIR}/dist/${NEURALFX_PACKAGE_NAME}.zip --format=zip
         $<TARGET_FILE_NAME:dxgi> NeuralFX/neuralfx.ini NeuralFX/shaders
-        NeuralFX/luts README
+        NeuralFX/luts/neuralfx-cool.cube README
     WORKING_DIRECTORY $<TARGET_FILE_DIR:dxgi>
     DEPENDS neuralfx_runtime_assets
     VERBATIM

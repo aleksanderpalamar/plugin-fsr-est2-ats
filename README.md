@@ -47,10 +47,10 @@ enabled=true
 mode=photoreal
 photoreal_sharpness=0.30
 lut_strength=0.5
-lut_path=luts/film-cool.cube
+lut_path=luts/neuralfx-cool.cube
 ```
 
-The included LUT is located at `NeuralFX/luts/film-cool.cube`. `mode=hook` tests forwarding only; `copy` performs a GPU copy round trip; `fullscreen` runs the copy pass; `rcas` applies sharpening; and `photoreal` runs grading, RCAS, and finishing. `sharpness` accepts values from 0 to 1 in `rcas` mode. Changing `mode` requires restarting the game.
+The included, project-generated LUT is located at `NeuralFX/luts/neuralfx-cool.cube`. `mode=hook` tests forwarding only; `copy` performs a GPU copy round trip; `fullscreen` runs the copy pass; `rcas` applies sharpening; and `photoreal` runs grading, RCAS, and finishing. `sharpness` accepts values from 0 to 1 in `rcas` mode. Changing `mode` requires restarting the game.
 
 In `photoreal` mode, the backbuffer is copied before `Present`. The first draw processes color and clarity and writes sRGB to an `R16G16B16A16_FLOAT` intermediate target. The second draw applies RCAS, grain, and dither, then writes to the backbuffer. The `exposure_ev`, `contrast`, `saturation`, `clarity`, `highlight_boost`, `highlight_warmth`, `shadow_coolness`, `neural_strength`, `black_level`, `lut_strength`, `grain_strength`, `tone_strength`, `highlight_start`, `highlight_end`, and `photoreal_sharpness` parameters can be changed in the INI while the game is running; the plugin reloads them within one second. The initial `photoreal_sharpness` value is 0.30. `lut_path` points to a 3D `.cube` LUT with a 0-to-1 domain and a size from 2 to 64, relative to the `NeuralFX` folder. The LUT is optional and is applied only when `lut_strength` is greater than zero. The neural residual is optional and is applied only when a producer supplies an SRV to the renderer and `neural_strength` is greater than zero; this prototype does not yet include such a producer.
 

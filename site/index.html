@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111716">
+  <meta name="description" content="NeuralFX dá um visual cinematográfico ao ETS2 e ATS com cor ajustável, LUT e nitidez RCAS. Pacote para Windows x64 por US$ 5.">
+  <title>NeuralFX — Um novo clima para a estrada</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="alternate" hreflang="en" href="en/">
+  <link rel="alternate" hreflang="pt-BR" href="./">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/sections.css">
+  <script src="checkout-config.js" defer></script>
+  <script src="main.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="./" aria-label="NeuralFX, início"><span class="brand-mark" aria-hidden="true">N<span>×</span></span><span>NeuralFX</span></a>
+      <nav class="nav" aria-label="Navegação principal">
+        <a href="#plugin">O plugin</a>
+        <a href="#como-funciona">Como funciona</a>
+        <a href="#preco">Preço</a>
+      </nav>
+      <a class="language-link" href="en/" lang="en" hreflang="en">English <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="hero container" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> Para ETS2 e ATS · Windows x64</p>
+        <h1 id="hero-title">Um novo clima para <em>a estrada.</em></h1>
+        <p class="hero-lead">NeuralFX traz cores com estilo de filme e nitidez ajustável para suas viagens. Instale o pacote, escolha a intensidade e volte a dirigir.</p>
+        <div class="hero-actions">
+          <a class="button button-primary checkout-link" data-checkout data-ready-label="Comprar por US$ 5" aria-disabled="true">Compra em preparação</a>
+          <a class="button button-secondary" href="https://github.com/aleksanderpalamar/plugin-fsr-est2-ats">Ver código no GitHub <span aria-hidden="true">↗</span></a>
+        </div>
+        <p class="hero-small">Pagamento único · Checkout no Stripe · Código aberto sob licença MIT</p>
+      </div>
+      <div class="hero-art">
+        <div class="visual" role="img" aria-label="Ilustração de uma estrada ao pôr do sol, representando o tratamento de cor do plugin">
+          <div class="visual-sun"></div>
+          <div class="visual-horizon"></div>
+          <div class="visual-road"></div>
+          <div class="visual-line"></div>
+          <div class="visual-label"><span>NEURALFX / 01</span><strong>LIGHT · COLOR · DETAIL</strong></div>
+        </div>
+        <p class="visual-note">Ilustração conceitual. O resultado real depende do jogo e das configurações.</p>
+      </div>
+    </section>
+
+    <section class="feature-strip" aria-label="Principais recursos">
+      <div class="container feature-strip-inner">
+        <span>Cor cinematográfica</span><span aria-hidden="true">✦</span>
+        <span>LUT de cores inclusa</span><span aria-hidden="true">✦</span>
+        <span>Nitidez RCAS</span><span aria-hidden="true">✦</span>
+        <span>Ajuste em tempo real</span>
+      </div>
+    </section>
+
+    <section class="section container" id="plugin" aria-labelledby="plugin-title">
+      <div class="section-heading"><p class="eyebrow">O plugin</p><h2 id="plugin-title">Sua rota, outra atmosfera.</h2><p>O efeito é aplicado à imagem pronta do jogo, pouco antes de ela aparecer na tela. Você continua jogando normalmente, com mais controle sobre o visual.</p></div>
+      <div class="feature-grid">
+        <article class="feature-card">
+          <span class="feature-number">01 / COR</span>
+          <h3>Luz com personalidade</h3>
+          <p>Ajuste contraste, exposição, sombras e realces para criar um visual mais natural ou mais cinematográfico.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-number">02 / LUT</span>
+          <h3>Um tom pronto para usar</h3>
+          <p>O pacote inclui uma LUT, um arquivo que define a aparência das cores. Você também pode usar uma LUT <code>.cube</code> compatível.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-number">03 / DETALHE</span>
+          <h3>Nitidez na medida</h3>
+          <p>O RCAS destaca detalhes da imagem. A intensidade pode ser ajustada sem aumentar a resolução do jogo.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section process-section" id="como-funciona" aria-labelledby="process-title">
+      <div class="container process-layout">
+        <div class="section-heading"><p class="eyebrow">Como funciona</p><h2 id="process-title">Simples de instalar. Fácil de ajustar.</h2><p>O plugin trabalha com DirectX 11 e mantém os controles em um arquivo de configuração.</p></div>
+        <ol class="steps">
+          <li><span>01</span><div><h3>Faça uma cópia de segurança</h3><p>Feche o jogo e guarde qualquer <code>dxgi.dll</code> ou pasta <code>NeuralFX</code> que já esteja instalada.</p></div></li>
+          <li><span>02</span><div><h3>Extraia o pacote</h3><p>Coloque <code>dxgi.dll</code> e a pasta <code>NeuralFX</code> em <code>bin/win_x64</code>, ao lado do executável do jogo.</p></div></li>
+          <li><span>03</span><div><h3>Dirija do seu jeito</h3><p>Abra o jogo. Se quiser mudar o efeito, edite <code>NeuralFX/neuralfx.ini</code>; os ajustes visuais são recarregados automaticamente.</p></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section container" aria-labelledby="scope-title">
+      <div class="scope-panel"><div><p class="eyebrow">Antes de instalar</p><h2 id="scope-title">Saiba exatamente o que esperar.</h2></div><ul><li>Feito para as versões Windows x64 de Euro Truck Simulator 2 e American Truck Simulator com DirectX 11.</li><li>O efeito também alcança a interface do jogo, porque trata a imagem final.</li><li>Funciona em SDR. Não oferece HDR, geração de quadros nem aumento de resolução por FSR.</li></ul></div>
+    </section>
+
+    <section class="section pricing-section" id="preco" aria-labelledby="price-title">
+      <div class="container pricing-layout">
+        <div class="section-heading"><p class="eyebrow">Preço justo</p><h2 id="price-title">Uma pequena compra. Muitas estradas.</h2><p>Seu pagamento apoia o desenvolvimento e entrega um pacote pronto para instalar. O código-fonte continua disponível gratuitamente no GitHub sob licença MIT.</p></div>
+        <div class="price-card">
+          <p class="price-label">NEURALFX · PACOTE DIGITAL</p>
+          <p class="price"><span>US$</span> 5</p>
+          <p class="price-frequency">Pagamento único</p>
+          <ul>
+            <li>Plugin para Windows x64</li>
+            <li>Configuração pronta para usar</li>
+            <li>LUT Film Cool inclusa</li>
+            <li>Download pelo Google Drive com uma conta Google</li>
+          </ul>
+          <a class="button button-primary checkout-link" data-checkout data-ready-label="Comprar com Stripe" aria-disabled="true">Compra em preparação</a>
+          <p class="checkout-status" data-checkout-status data-ready-text="Após a compra, o Stripe abre a pasta no Google Drive. Entre em uma conta Google para baixar.">A compra será liberada após a configuração do download.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section container faq-section" aria-labelledby="faq-title">
+      <div class="section-heading"><p class="eyebrow">Perguntas rápidas</p><h2 id="faq-title">Respostas diretas.</h2></div>
+      <div class="faq-list">
+        <details><summary>Isso aumenta o FPS?</summary><p>Não. O foco é a aparência da imagem. Como há processamento adicional, o impacto no desempenho depende do seu computador e das configurações escolhidas.</p></details>
+        <details><summary>O plugin faz upscaling FSR?</summary><p>Não. Ele usa a técnica de nitidez RCAS, mas não aumenta a resolução nem gera novos quadros.</p></details>
+        <details><summary>Posso alterar as cores depois?</summary><p>Sim. Você pode ajustar os parâmetros no arquivo <code>neuralfx.ini</code> e trocar a LUT <code>.cube</code> por outra compatível.</p></details>
+        <details><summary>O código é aberto?</summary><p>Sim. O projeto está no <a href="https://github.com/aleksanderpalamar/plugin-fsr-est2-ats">GitHub</a> sob licença MIT. A compra do pacote é uma forma de apoiar o projeto.</p></details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer"><div class="container footer-inner"><div><span class="brand footer-brand">NeuralFX</span><p>Mais atmosfera para cada quilômetro.</p></div><div class="footer-links"><a href="https://github.com/aleksanderpalamar/plugin-fsr-est2-ats">Código e documentação</a><a href="https://github.com/aleksanderpalamar/plugin-fsr-est2-ats/issues">Dúvidas e suporte</a><a href="en/" lang="en" hreflang="en">English</a></div></div></footer>
+</body>
+</html>

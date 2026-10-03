@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111716">
+  <meta name="description" content="NeuralFX gives ETS2 and ATS a cinematic look with adjustable color, a LUT, and RCAS sharpening. Windows x64 package for $5.">
+  <title>NeuralFX — A new mood for the road</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="alternate" hreflang="en" href="./">
+  <link rel="alternate" hreflang="pt-BR" href="../">
+  <link rel="stylesheet" href="../styles/base.css">
+  <link rel="stylesheet" href="../styles/sections.css">
+  <script src="../checkout-config.js" defer></script>
+  <script src="../main.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="../" aria-label="NeuralFX, home"><span class="brand-mark" aria-hidden="true">N<span>×</span></span><span>NeuralFX</span></a>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="#plugin">The plugin</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#pricing">Pricing</a>
+      </nav>
+      <a class="language-link" href="../" lang="pt-BR" hreflang="pt-BR">Português <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+
+  <main id="content">
+    <section class="hero container" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> For ETS2 and ATS · Windows x64</p>
+        <h1 id="hero-title">A new mood for <em>the road.</em></h1>
+        <p class="hero-lead">NeuralFX brings film-inspired color and adjustable sharpness to your journeys. Install the package, set the intensity, and get back to driving.</p>
+        <div class="hero-actions">
+          <a class="button button-primary checkout-link" data-checkout data-ready-label="Buy for $5" aria-disabled="true">Checkout coming soon</a>
+          <a class="button button-secondary" href="https://github.com/aleksanderpalamar/plugin-fsr-est2-ats">View source on GitHub <span aria-hidden="true">↗</span></a>
+        </div>
+        <p class="hero-small">One-time payment · Stripe checkout · MIT-licensed source code</p>
+      </div>
+      <div class="hero-art">
+        <div class="visual" role="img" aria-label="Illustration of a road at sunset representing the plugin's color treatment">
+          <div class="visual-sun"></div>
+          <div class="visual-horizon"></div>
+          <div class="visual-road"></div>
+          <div class="visual-line"></div>
+          <div class="visual-label"><span>NEURALFX / 01</span><strong>LIGHT · COLOR · DETAIL</strong></div>
+        </div>
+        <p class="visual-note">Concept illustration. Actual results vary by game and settings.</p>
+      </div>
+    </section>
+
+    <section class="feature-strip" aria-label="Key features">
+      <div class="container feature-strip-inner">
+        <span>Cinematic color</span><span aria-hidden="true">✦</span>
+        <span>Included color LUT</span><span aria-hidden="true">✦</span>
+        <span>RCAS sharpening</span><span aria-hidden="true">✦</span>
+        <span>Live adjustments</span>
+      </div>
+    </section>
+
+    <section class="section container" id="plugin" aria-labelledby="plugin-title">
+      <div class="section-heading"><p class="eyebrow">The plugin</p><h2 id="plugin-title">Your route, a different atmosphere.</h2><p>The effect works on the game's finished image just before it appears on screen. Keep playing as usual, with more control over how it looks.</p></div>
+      <div class="feature-grid">
+        <article class="feature-card">
+          <span class="feature-number">01 / COLOR</span>
+          <h3>Light with character</h3>
+          <p>Adjust contrast, exposure, shadows, and highlights for a more natural or cinematic look.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-number">02 / LUT</span>
+          <h3>A ready-made look</h3>
+          <p>The package includes a LUT, a file that defines how colors appear. You can also use a compatible <code>.cube</code> LUT.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-number">03 / DETAIL</span>
+          <h3>Sharpen to taste</h3>
+          <p>RCAS brings out detail in the image. You can adjust its strength without changing the game's resolution.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section process-section" id="how-it-works" aria-labelledby="process-title">
+      <div class="container process-layout">
+        <div class="section-heading"><p class="eyebrow">How it works</p><h2 id="process-title">Simple to install. Easy to tune.</h2><p>The plugin works with DirectX 11 and keeps its controls in a configuration file.</p></div>
+        <ol class="steps">
+          <li><span>01</span><div><h3>Back up existing files</h3><p>Close the game and save any existing <code>dxgi.dll</code> or <code>NeuralFX</code> folder before installing.</p></div></li>
+          <li><span>02</span><div><h3>Extract the package</h3><p>Place <code>dxgi.dll</code> and the <code>NeuralFX</code> folder in <code>bin/win_x64</code>, next to the game's executable.</p></div></li>
+          <li><span>03</span><div><h3>Make it yours</h3><p>Launch the game. To change the look, edit <code>NeuralFX/neuralfx.ini</code>; visual settings reload automatically.</p></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section container" aria-labelledby="scope-title">
+      <div class="scope-panel"><div><p class="eyebrow">Before installing</p><h2 id="scope-title">Know what to expect.</h2></div><ul><li>Built for the Windows x64 versions of Euro Truck Simulator 2 and American Truck Simulator using DirectX 11.</li><li>The effect also changes the game's interface because it processes the finished image.</li><li>Works with SDR. It does not provide HDR, frame generation, or FSR upscaling.</li></ul></div>
+    </section>
+
+    <section class="section pricing-section" id="pricing" aria-labelledby="price-title">
+      <div class="container pricing-layout">
+        <div class="section-heading"><p class="eyebrow">Fair price</p><h2 id="price-title">A small purchase. Many miles ahead.</h2><p>Your payment supports development and gets you a ready-to-install package. The source code remains freely available on GitHub under the MIT license.</p></div>
+        <div class="price-card">
+          <p class="price-label">NEURALFX · DIGITAL PACKAGE</p>
+          <p class="price"><span>$</span> 5</p>
+          <p class="price-frequency">One-time payment in USD</p>
+          <ul>
+            <li>Windows x64 plugin</li>
+            <li>Ready-to-use configuration</li>
+            <li>Film Cool LUT included</li>
+            <li>Download through Google Drive with a Google account</li>
+          </ul>
+          <a class="button button-primary checkout-link" data-checkout data-ready-label="Buy with Stripe" aria-disabled="true">Checkout coming soon</a>
+          <p class="checkout-status" data-checkout-status data-ready-text="After purchase, Stripe opens the Google Drive folder. Sign in with a Google account to download.">Checkout opens after the download is configured.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section container faq-section" aria-labelledby="faq-title">
+      <div class="section-heading"><p class="eyebrow">Quick answers</p><h2 id="faq-title">Clear answers.</h2></div>
+      <div class="faq-list">
+        <details><summary>Will it increase my FPS?</summary><p>No. The focus is image quality. Extra processing can affect performance depending on your computer and chosen settings.</p></details>
+        <details><summary>Does it upscale with FSR?</summary><p>No. It uses RCAS sharpening, but it does not increase resolution or generate frames.</p></details>
+        <details><summary>Can I change the colors later?</summary><p>Yes. Adjust the settings in <code>neuralfx.ini</code> and replace the <code>.cube</code> LUT with another compatible one.</p></details>
+        <details><summary>Is the source code open?</summary><p>Yes. The project is on <a href="https://github.com/aleksanderpalamar/plugin-fsr-est2-ats">GitHub</a> under the MIT license. Buying the package supports the project.</p></details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer"><div class="container footer-inner"><div><span class="brand footer-brand">NeuralFX</span><p>A little more atmosphere for every mile.</p></div><div class="footer-links"><a href="https://github.com/aleksanderpalamar/plugin-fsr-est2-ats">Source and documentation</a><a href="https://github.com/aleksanderpalamar/plugin-fsr-est2-ats/issues">Questions and support</a><a href="../" lang="pt-BR" hreflang="pt-BR">Português</a></div></div></footer>
+</body>
+</html>

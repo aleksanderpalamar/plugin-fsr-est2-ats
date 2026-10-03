@@ -57,6 +57,8 @@ set_target_properties(dxgi PROPERTIES OUTPUT_NAME dxgi PREFIX "")
 add_executable(neuralfx_dxgi_smoke tests/dxgi_proxy_smoke.cpp)
 target_compile_features(neuralfx_dxgi_smoke PRIVATE cxx_std_20)
 target_link_libraries(neuralfx_dxgi_smoke PRIVATE dxguid kernel32)
+add_dependencies(neuralfx_dxgi_smoke dxgi)
+add_test(NAME neuralfx_dxgi_smoke COMMAND neuralfx_dxgi_smoke $<TARGET_FILE:dxgi>)
 
 add_executable(neuralfx_shader_compile_tests tests/shader_compile.cpp)
 target_compile_features(neuralfx_shader_compile_tests PRIVATE cxx_std_20)

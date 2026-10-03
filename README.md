@@ -19,12 +19,11 @@ Before installing, validate the exports on the same Windows system with `powersh
 
 ## Cross-compiling on Linux
 
-With Zig 0.16 and Ninja:
+With Zig 0.16, Ninja, and CMake, run these scripts from the repository root. The build script compiles the project; the package script builds it and creates the installation ZIP:
 
 ```sh
-ZIG_GLOBAL_CACHE_DIR=/tmp/neuralfx-zig-cache cmake -S . -B build/windows-x64 -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/zig-windows-x64.cmake -DCMAKE_BUILD_TYPE=Release
-ZIG_GLOBAL_CACHE_DIR=/tmp/neuralfx-zig-cache cmake --build build/windows-x64 --parallel 4
-ZIG_GLOBAL_CACHE_DIR=/tmp/neuralfx-zig-cache cmake --build build/windows-x64 --target neuralfx_package --parallel 4
+./scripts/build.sh
+./scripts/package.sh
 ```
 
 The output is `build/windows-x64/dxgi.dll` with supporting files in `build/windows-x64/NeuralFX`. This build was compiled as PE x64 and passed a loading and `CreateDXGIFactory1` test in Wine. The `Present` and `ResizeBuffers` hooks still need testing in ETS2.

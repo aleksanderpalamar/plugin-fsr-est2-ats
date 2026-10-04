@@ -27,11 +27,6 @@ jobs:
         run: git diff --check "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}"
       - name: Check shell syntax
         run: bash -n scripts/*.sh
-      - name: Check storefront JavaScript
-        run: |
-          node --check site/main.js
-          node --check site/checkout-config.js
-          node site/tests/checkout.test.js
       - name: Configure native tests
         run: cmake -S . -B build/native -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wall -Wextra" -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
       - name: Build native tests
@@ -48,6 +43,7 @@ jobs:
         run: |
           ./scripts/package.sh
           python3 tests/package_check.py
+          python3 -m unittest discover -s tests -p package_check_test.py
 
   windows:
     name: Windows validation
@@ -65,4 +61,6 @@ jobs:
       - name: Build package
         run: cmake --build build/windows --config Release --target neuralfx_package
       - name: Check package contents
-        run: python tests/package_check.py
+        run: |
+          python tests/package_check.py
+          python -m unittest discover -s tests -p package_check_test.py

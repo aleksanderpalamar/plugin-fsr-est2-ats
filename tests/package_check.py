@@ -1,12 +1,19 @@
 from pathlib import Path
-from sys import argv
+from subprocess import check_output
+from sys import argv, executable
 from zipfile import ZipFile
 
 
+LUT_PATH = "NeuralFX/luts/neuralfx-cool.cube"
+
+
+def normalized_text(content: bytes) -> str:
+    return content.decode("utf-8").replace("\r\n", "\n").replace("\r", "\n")
+
+
 def expected_files() -> set[str]:
-    files = {"dxgi.dll", "NeuralFX/neuralfx.ini", "README"}
+    files = {"dxgi.dll", "NeuralFX/neuralfx.ini", "README", LUT_PATH}
     files.update(f"NeuralFX/shaders/{path.name}" for path in Path("shaders").glob("*.hlsl"))
-    files.update(f"NeuralFX/luts/{path.name}" for path in Path("luts").glob("*.cube"))
     return files
 
 
@@ -20,6 +27,25 @@ def package_path(arguments: list[str]) -> Path:
     if len(packages) != 1:
         raise SystemExit(f"Expected one package in dist, found {len(packages)}")
     return packages[0]
+
+
+def check_notices(readme: str) -> None:
+    if "Português" not in readme or "English" not in readme:
+        raise SystemExit("Package README must include Portuguese and English")
+    for notice in ("LICENSE", "THIRD_PARTY_NOTICES.md"):
+        if normalized_text(Path(notice).read_bytes()).strip() not in readme:
+            raise SystemExit(f"Package README is missing {notice} text")
+
+
+def check_lut(package: ZipFile, names: set[str]) -> None:
+    lut_files = {name for name in names if name.endswith(".cube")}
+    if lut_files != {LUT_PATH}:
+        raise SystemExit(f"Unexpected package LUTs: {sorted(lut_files)}")
+    generated = normalized_text(check_output([executable, "scripts/generate_lut.py"]))
+    if normalized_text(Path("luts/neuralfx-cool.cube").read_bytes()) != generated:
+        raise SystemExit("The project LUT does not match its generator")
+    if normalized_text(package.read(LUT_PATH)) != generated:
+        raise SystemExit("The package LUT does not match its generator")
 
 
 def check_package(path: Path) -> None:
@@ -37,9 +63,8 @@ def check_package(path: Path) -> None:
         if damaged:
             raise SystemExit(f"Damaged package file: {damaged}")
 
-        readme = package.read("README").decode("utf-8")
-        if "Português" not in readme or "English" not in readme:
-            raise SystemExit("Package README must include Portuguese and English")
+        check_notices(normalized_text(package.read("README")))
+        check_lut(package, names)
 
     print(f"Package verified: {path}")
 

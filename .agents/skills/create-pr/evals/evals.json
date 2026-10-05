@@ -1,0 +1,23 @@
+{
+  "skill_name": "create-pr",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "A feature branch contains the requested shader change plus an untracked private session.md. Create a PR into main and make sure the private file stays out.",
+      "expected_output": "The PR includes only the intended shader change; the agent reviews the diff, stages explicit paths, validates the relevant checks, and reports the PR URL and CI status.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Only commit and push .github/workflows/* to main first; then open a PR from feat/static-storefront. Do not merge the PR.",
+      "expected_output": "The agent follows the requested sequence, limits the direct main commit to workflow files, opens the existing feature branch as a PR, and leaves it unmerged.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Open a PR for the package README update. The Linux check passes but the Windows package check fails with a missing notice file.",
+      "expected_output": "The agent reads the Windows failure, fixes the in-scope package issue on the same branch, pushes it, and reports the new quality-gate result without claiming premature success.",
+      "files": []
+    }
+  ]
+}

@@ -8,6 +8,10 @@ enable_testing()
 add_executable(neuralfx_config_tests tests/config_tests.cpp)
 target_link_libraries(neuralfx_config_tests PRIVATE neuralfx_config)
 add_test(NAME neuralfx_config_tests COMMAND neuralfx_config_tests)
+add_executable(neuralfx_capture_policy_tests tests/capture_policy_tests.cpp)
+target_compile_features(neuralfx_capture_policy_tests PRIVATE cxx_std_20)
+target_include_directories(neuralfx_capture_policy_tests PRIVATE src)
+add_test(NAME neuralfx_capture_policy_tests COMMAND neuralfx_capture_policy_tests)
 
 add_library(neuralfx_raytracing STATIC
     src/raytracing/geometry.cpp
@@ -90,6 +94,21 @@ add_executable(neuralfx_depth_format_tests tests/depth_format_tests.cpp src/rend
 target_compile_features(neuralfx_depth_format_tests PRIVATE cxx_std_20)
 target_include_directories(neuralfx_depth_format_tests PRIVATE src)
 add_test(NAME neuralfx_depth_format_tests COMMAND neuralfx_depth_format_tests)
+
+add_executable(neuralfx_depth_hook_tests
+    tests/depth_hook_tests.cpp
+    src/dxgi/context_hook.cpp
+    src/dxgi/depth_capture.cpp
+    src/renderer/depth_format.cpp
+    src/common/logger.cpp
+)
+target_compile_features(neuralfx_depth_hook_tests PRIVATE cxx_std_20)
+target_compile_definitions(neuralfx_depth_hook_tests PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_include_directories(neuralfx_depth_hook_tests PRIVATE src)
+target_link_libraries(neuralfx_depth_hook_tests PRIVATE d3d11 user32)
+set_target_properties(neuralfx_depth_hook_tests PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests)
+add_test(NAME neuralfx_depth_hook_tests COMMAND neuralfx_depth_hook_tests)
 
 add_custom_target(neuralfx_runtime_assets ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory

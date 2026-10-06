@@ -1,6 +1,5 @@
 #include "dxgi/swapchain_hook.hpp"
 #include "dxgi/context_hook.hpp"
-#include "dxgi/depth_capture.hpp"
 #include "dxgi/vtable_patch.hpp"
 #include "renderer/renderer.hpp"
 #include "common/logger.hpp"
@@ -78,7 +77,6 @@ HRESULT STDMETHODCALLTYPE on_resize(IDXGISwapChain* swapchain, UINT count, UINT 
     } catch (...) {
         log("Unexpected exception in ResizeBuffers hook");
     }
-    DepthCapture::instance().reset();
     HRESULT result = original_resize(swapchain, count, width, height, format, flags);
     if (SUCCEEDED(result)) hook_context(swapchain);
     return result;

@@ -2,6 +2,7 @@
 #include "renderer/context_state.hpp"
 #include "renderer/photoreal_constants.hpp"
 #include "renderer/screen_space_constants.hpp"
+#include "renderer/capture_policy.hpp"
 #include "dxgi/depth_capture.hpp"
 #include "common/logger.hpp"
 
@@ -56,6 +57,7 @@ void Renderer::present(IDXGISwapChain* swapchain) {
     if (!initialized_ && !failed_) ensure_initialized(swapchain);
     if (initialized_) poll_config();
     poll_hotkey();
+    DepthCapture::instance().set_active(captures_depth(initialized_, config_));
     if (!initialized_ || !config_.enabled || config_.mode == TestMode::Hook) return;
     profiler_.poll(context_.Get());
     profiler_.begin(context_.Get());
@@ -92,7 +94,7 @@ void Renderer::present(IDXGISwapChain* swapchain) {
 
 void Renderer::reset(IDXGISwapChain* swapchain) noexcept {
     std::lock_guard lock(mutex_);
-    if (swapchain && active_swapchain_ != swapchain) return;
+    if (!resets_active_capture(active_swapchain_, swapchain)) return;
     reset_unlocked();
 }
 
@@ -110,7 +112,7 @@ void Renderer::reset_unlocked() noexcept {
     copy_pixel_.Reset();
     vertex_.Reset();
     trace_constants_.Reset();
-    DepthCapture::instance().set_active(false);
+    DepthCapture::instance().reset();
     context_.Reset();
     device_.Reset();
     initialized_ = false;
@@ -141,7 +143,8 @@ void Renderer::ensure_initialized(IDXGISwapChain* swapchain) {
     HRESULT result = initialize(swapchain);
     failed_ = FAILED(result);
     initialized_ = !failed_;
-    DepthCapture::instance().set_active(initialized_ && config_.mode == TestMode::Raytracing);
+    if (initialized_ && config_.mode == TestMode::Raytracing)
+        DepthCapture::instance().configure(device_.Get(), resources_.width(), resources_.height());
     if (failed_) log("Renderer initialization failed: " + std::to_string(static_cast<unsigned long>(result)));
 }
 

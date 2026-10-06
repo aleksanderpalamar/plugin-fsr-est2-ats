@@ -12,6 +12,8 @@ int main() {
     auto configured = neuralfx::parse_config(valid);
     if (!configured.enabled || configured.mode != neuralfx::TestMode::Rcas) return 2;
     if (configured.sharpness < 0.79f || configured.sharpness > 0.81f) return 3;
+    std::istringstream raytracing("enabled=true\nmode=raytracing\n");
+    if (neuralfx::parse_config(raytracing).mode != neuralfx::TestMode::Raytracing) return 25;
     std::istringstream invalid("sharpness=nope\nmode=unknown\n");
     auto fallback = neuralfx::parse_config(invalid);
     if (fallback.sharpness != 0.65f || fallback.mode != neuralfx::TestMode::Hook) return 4;

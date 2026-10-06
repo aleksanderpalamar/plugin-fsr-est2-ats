@@ -7,13 +7,16 @@
 namespace neuralfx {
 class RenderResourceManager {
 public:
-    HRESULT initialize(ID3D11Device* device, IDXGISwapChain* swapchain, bool photoreal) noexcept;
+    HRESULT initialize(ID3D11Device* device, IDXGISwapChain* swapchain,
+        bool photoreal, bool raytracing) noexcept;
     void reset() noexcept;
     ID3D11Texture2D* backbuffer() const noexcept { return backbuffer_.Get(); }
     ID3D11RenderTargetView* output() const noexcept { return output_.Get(); }
     ID3D11ShaderResourceView* input() const noexcept { return input_.Get(); }
     ID3D11ShaderResourceView* stage_input() const noexcept { return stage_input_.Get(); }
     ID3D11RenderTargetView* stage_output() const noexcept { return stage_output_.Get(); }
+    ID3D11ShaderResourceView* traced_input() const noexcept { return traced_input_.Get(); }
+    ID3D11RenderTargetView* traced_output() const noexcept { return traced_output_.Get(); }
     ID3D11Texture2D* copy() const noexcept { return copy_.Get(); }
     UINT width() const noexcept { return width_; }
     UINT height() const noexcept { return height_; }
@@ -24,6 +27,9 @@ private:
     Microsoft::WRL::ComPtr<ID3D11Texture2D> backbuffer_;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> copy_;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> stage_;
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> traced_;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> traced_input_;
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView> traced_output_;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> stage_input_;
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> stage_output_;
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> output_;

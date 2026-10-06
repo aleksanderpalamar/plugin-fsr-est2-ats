@@ -58,6 +58,7 @@ void assign(Config& config, std::string_view key, std::string_view value) {
     if (key == "mode" && value == "fullscreen") config.mode = TestMode::Fullscreen;
     if (key == "mode" && value == "rcas") config.mode = TestMode::Rcas;
     if (key == "mode" && value == "photoreal") config.mode = TestMode::Photoreal;
+    if (key == "mode" && value == "raytracing") config.mode = TestMode::Raytracing;
     if (key == "lut_path") config.lut_path = value;
     auto parsed = parse_number(value);
     if (!parsed) return;

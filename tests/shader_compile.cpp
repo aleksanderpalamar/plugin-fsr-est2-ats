@@ -22,10 +22,12 @@ int main() {
     auto directory = std::filesystem::path(executable).parent_path() / L"NeuralFX" / L"shaders";
     auto fullscreen = directory / L"fullscreen.hlsl";
     auto photoreal = directory / L"photoreal.hlsl";
+    auto raytracing = directory / L"raytracing.hlsl";
     if (!compile(fullscreen, "VSMain", "vs_5_0")) return 2;
     if (!compile(fullscreen, "CopyMain", "ps_5_0")) return 3;
     if (!compile(fullscreen, "RcasMain", "ps_5_0")) return 4;
     if (!compile(photoreal, "PhotorealMain", "ps_5_0")) return 5;
     if (!compile(photoreal, "FinishMain", "ps_5_0")) return 6;
+    if (!compile(raytracing, "TraceMain", "ps_5_0")) return 7;
     return 0;
 }

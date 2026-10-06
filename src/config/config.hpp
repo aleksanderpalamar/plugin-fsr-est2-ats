@@ -4,7 +4,7 @@
 #include <string>
 
 namespace neuralfx {
-enum class TestMode { Hook, Copy, Fullscreen, Rcas, Photoreal };
+enum class TestMode { Hook, Copy, Fullscreen, Rcas, Photoreal, Raytracing };
 
 struct PhotorealSettings {
     float exposure_ev = 0.10f;

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(NeuralFX_ETS2 VERSION 1.0.0 LANGUAGES CXX)
+project(NeuralFX_ETS2 VERSION 2.0.0 LANGUAGES CXX)
 
 add_library(neuralfx_config STATIC src/config/config_parser.cpp src/renderer/lut_data.cpp)
 target_compile_features(neuralfx_config PUBLIC cxx_std_20)
@@ -9,6 +9,23 @@ add_executable(neuralfx_config_tests tests/config_tests.cpp)
 target_link_libraries(neuralfx_config_tests PRIVATE neuralfx_config)
 add_test(NAME neuralfx_config_tests COMMAND neuralfx_config_tests)
 
+add_library(neuralfx_raytracing STATIC
+    src/raytracing/geometry.cpp
+    src/raytracing/bvh_build.cpp
+    src/raytracing/bvh_query.cpp
+    src/raytracing/scene.cpp
+    src/raytracing/camera.cpp
+    src/raytracing/tracer.cpp
+    src/raytracing/image.cpp
+)
+target_compile_features(neuralfx_raytracing PUBLIC cxx_std_20)
+target_include_directories(neuralfx_raytracing PUBLIC src)
+add_executable(neuralfx_raytracing_geometry_tests tests/raytracing_geometry_tests.cpp)
+target_link_libraries(neuralfx_raytracing_geometry_tests PRIVATE neuralfx_raytracing)
+add_test(NAME neuralfx_raytracing_geometry_tests COMMAND neuralfx_raytracing_geometry_tests)
+add_executable(neuralfx_raytracing_render_tests tests/raytracing_render_tests.cpp)
+target_link_libraries(neuralfx_raytracing_render_tests PRIVATE neuralfx_raytracing)
+add_test(NAME neuralfx_raytracing_render_tests COMMAND neuralfx_raytracing_render_tests)
 if(NOT WIN32)
     return()
 endif()
@@ -33,9 +50,13 @@ add_library(dxgi SHARED
     ${DXGI_STUB_SOURCE}
     src/dxgi/dxgi.def
     src/dxgi/swapchain_hook.cpp
+    src/dxgi/context_hook.cpp
+    src/dxgi/depth_capture.cpp
     src/renderer/renderer.cpp
     src/renderer/renderer_passes.cpp
+    src/renderer/renderer_screen_space.cpp
     src/renderer/resource_manager.cpp
+    src/renderer/depth_format.cpp
     src/renderer/lut_resource.cpp
     src/renderer/context_state.cpp
     src/renderer/gpu_profiler.cpp
@@ -64,6 +85,11 @@ add_executable(neuralfx_shader_compile_tests tests/shader_compile.cpp)
 target_compile_features(neuralfx_shader_compile_tests PRIVATE cxx_std_20)
 target_link_libraries(neuralfx_shader_compile_tests PRIVATE ${D3DCOMPILER_LIBRARY})
 add_test(NAME neuralfx_shader_compile_tests COMMAND neuralfx_shader_compile_tests)
+
+add_executable(neuralfx_depth_format_tests tests/depth_format_tests.cpp src/renderer/depth_format.cpp)
+target_compile_features(neuralfx_depth_format_tests PRIVATE cxx_std_20)
+target_include_directories(neuralfx_depth_format_tests PRIVATE src)
+add_test(NAME neuralfx_depth_format_tests COMMAND neuralfx_depth_format_tests)
 
 add_custom_target(neuralfx_runtime_assets ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory

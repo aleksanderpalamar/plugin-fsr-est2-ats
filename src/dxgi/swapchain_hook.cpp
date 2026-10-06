@@ -1,9 +1,11 @@
 #include "dxgi/swapchain_hook.hpp"
+#include "dxgi/context_hook.hpp"
+#include "dxgi/depth_capture.hpp"
+#include "dxgi/vtable_patch.hpp"
 #include "renderer/renderer.hpp"
 #include "common/logger.hpp"
 
 #include <windows.h>
-#include <bit>
 #include <dxgi1_2.h>
 #include <mutex>
 #include <wrl/client.h>
@@ -24,21 +26,6 @@ CreateForCore original_core = nullptr;
 CreateForComposition original_composition = nullptr;
 Present original_present = nullptr;
 Resize original_resize = nullptr;
-
-template <typename Function>
-bool patch(IUnknown* object, size_t index, Function replacement, Function& original) noexcept {
-    auto** table = *reinterpret_cast<void***>(object);
-    void* replacement_address = std::bit_cast<void*>(replacement);
-    if (table[index] == replacement_address) return true;
-    if (original) return false;
-    DWORD old_protection = 0;
-    if (!VirtualProtect(&table[index], sizeof(void*), PAGE_READWRITE, &old_protection)) return false;
-    original = std::bit_cast<Function>(table[index]);
-    InterlockedExchangePointer(reinterpret_cast<PVOID volatile*>(&table[index]), replacement_address);
-    DWORD unused = 0;
-    VirtualProtect(&table[index], sizeof(void*), old_protection, &unused);
-    return true;
-}
 
 HRESULT STDMETHODCALLTYPE on_create(IDXGIFactory* factory, IUnknown* device, DXGI_SWAP_CHAIN_DESC* desc, IDXGISwapChain** output) noexcept {
     if (!original_create) return E_FAIL;
@@ -73,11 +60,13 @@ HRESULT STDMETHODCALLTYPE on_present(IDXGISwapChain* swapchain, UINT interval, U
     static thread_local bool in_hook = false;
     if (in_hook || (flags & DXGI_PRESENT_TEST)) return original_present(swapchain, interval, flags);
     in_hook = true;
+    set_plugin_present(true);
     try {
         Renderer::instance().present(swapchain);
     } catch (...) {
         log("Unexpected exception in Present hook");
     }
+    set_plugin_present(false);
     in_hook = false;
     return original_present(swapchain, interval, flags);
 }
@@ -89,7 +78,10 @@ HRESULT STDMETHODCALLTYPE on_resize(IDXGISwapChain* swapchain, UINT count, UINT 
     } catch (...) {
         log("Unexpected exception in ResizeBuffers hook");
     }
-    return original_resize(swapchain, count, width, height, format, flags);
+    DepthCapture::instance().reset();
+    HRESULT result = original_resize(swapchain, count, width, height, format, flags);
+    if (SUCCEEDED(result)) hook_context(swapchain);
+    return result;
 }
 }
 
@@ -98,19 +90,20 @@ void hook_factory(IUnknown* factory) noexcept {
     std::lock_guard lock(hook_mutex);
     Microsoft::WRL::ComPtr<IDXGIFactory> base;
     if (FAILED(factory->QueryInterface(IID_PPV_ARGS(&base)))) return;
-    patch<CreateSwapChain>(base.Get(), 10, &on_create, original_create);
+    patch_vtable<CreateSwapChain>(base.Get(), 10, &on_create, original_create);
     Microsoft::WRL::ComPtr<IDXGIFactory2> factory2;
     if (FAILED(factory->QueryInterface(IID_PPV_ARGS(&factory2)))) return;
-    patch<CreateForHwnd>(factory2.Get(), 15, &on_hwnd, original_hwnd);
-    patch<CreateForCore>(factory2.Get(), 16, &on_core, original_core);
-    patch<CreateForComposition>(factory2.Get(), 24, &on_composition, original_composition);
+    patch_vtable<CreateForHwnd>(factory2.Get(), 15, &on_hwnd, original_hwnd);
+    patch_vtable<CreateForCore>(factory2.Get(), 16, &on_core, original_core);
+    patch_vtable<CreateForComposition>(factory2.Get(), 24, &on_composition, original_composition);
 }
 
 void hook_swapchain(IDXGISwapChain* swapchain) noexcept {
     if (!swapchain) return;
     std::lock_guard lock(hook_mutex);
-    bool present_hooked = patch<Present>(swapchain, 8, &on_present, original_present);
-    bool resize_hooked = patch<Resize>(swapchain, 13, &on_resize, original_resize);
+    bool present_hooked = patch_vtable<Present>(swapchain, 8, &on_present, original_present);
+    bool resize_hooked = patch_vtable<Resize>(swapchain, 13, &on_resize, original_resize);
     if (present_hooked && resize_hooked) log("Swapchain Present and ResizeBuffers hooked");
+    hook_context(swapchain);
 }
 }

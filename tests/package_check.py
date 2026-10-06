@@ -1,4 +1,5 @@
 from pathlib import Path
+from re import search
 from subprocess import check_output
 from sys import argv, executable
 from zipfile import ZipFile
@@ -23,10 +24,14 @@ def package_path(arguments: list[str]) -> Path:
     if len(arguments) != 1:
         raise SystemExit("Usage: package_check.py [package.zip]")
 
-    packages = list(Path("dist").glob("FSR-ets2-ats-*.zip"))
-    if len(packages) != 1:
-        raise SystemExit(f"Expected one package in dist, found {len(packages)}")
-    return packages[0]
+    cmake = Path("CMakeLists.txt").read_text(encoding="utf-8")
+    version = search(r"\bproject\s*\(\s*NeuralFX_ETS2\s+VERSION\s+(\d+\.\d+\.\d+)\b", cmake)
+    if not version:
+        raise SystemExit("Could not find the project version in CMakeLists.txt")
+    package = Path("dist") / f"FSR-ets2-ats-{version.group(1)}.zip"
+    if not package.is_file():
+        raise SystemExit(f"Current version package not found: {package}")
+    return package
 
 
 def check_notices(readme: str) -> None:
@@ -63,6 +68,9 @@ def check_package(path: Path) -> None:
         if damaged:
             raise SystemExit(f"Damaged package file: {damaged}")
 
+        config = normalized_text(package.read("NeuralFX/neuralfx.ini"))
+        if "mode=raytracing" not in config.splitlines():
+            raise SystemExit("Package must start in raytracing mode")
         check_notices(normalized_text(package.read("README")))
         check_lut(package, names)
 

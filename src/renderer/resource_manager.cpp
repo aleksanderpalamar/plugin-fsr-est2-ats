@@ -17,7 +17,8 @@ bool supported(DXGI_FORMAT format) noexcept {
 
 }
 
-HRESULT RenderResourceManager::initialize(ID3D11Device* device, IDXGISwapChain* swapchain, bool photoreal) noexcept {
+HRESULT RenderResourceManager::initialize(ID3D11Device* device, IDXGISwapChain* swapchain,
+    bool photoreal, bool raytracing) noexcept {
     reset();
     if (!device || !swapchain) return E_POINTER;
     HRESULT result = swapchain->GetBuffer(0, IID_PPV_ARGS(&backbuffer_));
@@ -55,10 +56,20 @@ HRESULT RenderResourceManager::initialize(ID3D11Device* device, IDXGISwapChain* 
     if (FAILED(result)) return result;
     result = device->CreateRenderTargetView(stage_.Get(), nullptr, &stage_output_);
     if (FAILED(result)) return result;
+    if (!raytracing) return S_OK;
+    result = device->CreateTexture2D(&stage, nullptr, &traced_);
+    if (FAILED(result)) return result;
+    result = device->CreateShaderResourceView(traced_.Get(), nullptr, &traced_input_);
+    if (FAILED(result)) return result;
+    result = device->CreateRenderTargetView(traced_.Get(), nullptr, &traced_output_);
+    if (FAILED(result)) return result;
     return S_OK;
 }
 
 void RenderResourceManager::reset() noexcept {
+    traced_input_.Reset();
+    traced_output_.Reset();
+    traced_.Reset();
     stage_input_.Reset();
     stage_output_.Reset();
     stage_.Reset();

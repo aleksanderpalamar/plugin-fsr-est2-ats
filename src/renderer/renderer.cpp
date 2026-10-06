@@ -1,6 +1,8 @@
 #include "renderer/renderer.hpp"
 #include "renderer/context_state.hpp"
 #include "renderer/photoreal_constants.hpp"
+#include "renderer/screen_space_constants.hpp"
+#include "dxgi/depth_capture.hpp"
 #include "common/logger.hpp"
 
 #include <windows.h>
@@ -28,7 +30,7 @@ void Renderer::load_lut() {
 }
 
 void Renderer::poll_config() {
-    if (config_.mode != TestMode::Photoreal) return;
+    if (config_.mode != TestMode::Photoreal && config_.mode != TestMode::Raytracing) return;
     auto now = std::chrono::steady_clock::now();
     if (now < next_config_poll_) return;
     next_config_poll_ = now + std::chrono::seconds(1);
@@ -58,15 +60,26 @@ void Renderer::present(IDXGISwapChain* swapchain) {
     profiler_.poll(context_.Get());
     profiler_.begin(context_.Get());
     ContextState previous(context_.Get());
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilView> current_depth;
+    if (config_.mode == TestMode::Raytracing)
+        context_->OMGetRenderTargets(0, nullptr, &current_depth);
     context_->OMSetRenderTargets(0, nullptr, nullptr);
+    if (current_depth) DepthCapture::instance().capture(context_.Get(), current_depth.Get());
     context_->CopyResource(resources_.copy(), resources_.backbuffer());
     if (config_.mode == TestMode::Copy) {
         context_->CopyResource(resources_.backbuffer(), resources_.copy());
         profiler_.end(context_.Get());
         return;
     }
-    if (config_.mode == TestMode::Photoreal) {
-        render_photoreal();
+    if (config_.mode == TestMode::Photoreal || config_.mode == TestMode::Raytracing) {
+        ID3D11ShaderResourceView* input = resources_.input();
+        auto depth = config_.mode == TestMode::Raytracing
+            ? DepthCapture::instance().take_view() : nullptr;
+        if (depth) {
+            render_screen_space(depth.Get());
+            input = resources_.traced_input();
+        }
+        render_photoreal(input);
     } else {
         PhotorealConstants parameters{};
         parameters.rcas_strength = config_.sharpness;
@@ -91,10 +104,13 @@ void Renderer::reset_unlocked() noexcept {
     neural_residual_.Reset();
     lut_.reset();
     finish_pixel_.Reset();
+    trace_pixel_.Reset();
     photoreal_pixel_.Reset();
     rcas_pixel_.Reset();
     copy_pixel_.Reset();
     vertex_.Reset();
+    trace_constants_.Reset();
+    DepthCapture::instance().set_active(false);
     context_.Reset();
     device_.Reset();
     initialized_ = false;
@@ -125,6 +141,7 @@ void Renderer::ensure_initialized(IDXGISwapChain* swapchain) {
     HRESULT result = initialize(swapchain);
     failed_ = FAILED(result);
     initialized_ = !failed_;
+    DepthCapture::instance().set_active(initialized_ && config_.mode == TestMode::Raytracing);
     if (failed_) log("Renderer initialization failed: " + std::to_string(static_cast<unsigned long>(result)));
 }
 
@@ -133,7 +150,9 @@ HRESULT Renderer::initialize(IDXGISwapChain* swapchain) {
     if (FAILED(result)) return result;
     device_->GetImmediateContext(&context_);
     if (!context_) return E_FAIL;
-    result = resources_.initialize(device_.Get(), swapchain, config_.mode == TestMode::Photoreal);
+    bool photoreal = config_.mode == TestMode::Photoreal || config_.mode == TestMode::Raytracing;
+    result = resources_.initialize(device_.Get(), swapchain, photoreal,
+        config_.mode == TestMode::Raytracing);
     if (FAILED(result)) return result;
     result = compile_shaders();
     if (FAILED(result)) return result;
@@ -143,7 +162,12 @@ HRESULT Renderer::initialize(IDXGISwapChain* swapchain) {
     description.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     result = device_->CreateBuffer(&description, nullptr, &constants_);
     if (FAILED(result)) return result;
-    result = config_.mode == TestMode::Photoreal ? initialize_photoreal() : S_OK;
+    if (config_.mode == TestMode::Raytracing) {
+        description.ByteWidth = sizeof(ScreenSpaceConstants);
+        result = device_->CreateBuffer(&description, nullptr, &trace_constants_);
+        if (FAILED(result)) return result;
+    }
+    result = photoreal ? initialize_photoreal() : S_OK;
     if (FAILED(result)) return result;
     if (FAILED(profiler_.initialize(device_.Get()))) log("GPU timing unavailable");
     log("D3D11 renderer ready: " + std::to_string(resources_.width()) + "x" + std::to_string(resources_.height()));

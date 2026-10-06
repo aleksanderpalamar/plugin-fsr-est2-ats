@@ -38,22 +38,24 @@ HRESULT Renderer::compile_shaders() {
     if (FAILED(result)) return result;
     result = create_pixel(device_.Get(), fullscreen, "RcasMain", rcas_pixel_);
     if (FAILED(result)) return result;
-    if (config_.mode != TestMode::Photoreal) return S_OK;
+    if (config_.mode != TestMode::Photoreal && config_.mode != TestMode::Raytracing) return S_OK;
     auto photoreal = directory / L"photoreal.hlsl";
     result = create_pixel(device_.Get(), photoreal, "PhotorealMain", photoreal_pixel_);
     if (FAILED(result)) return result;
-    return create_pixel(device_.Get(), photoreal, "FinishMain", finish_pixel_);
+    result = create_pixel(device_.Get(), photoreal, "FinishMain", finish_pixel_);
+    if (FAILED(result) || config_.mode != TestMode::Raytracing) return result;
+    return create_pixel(device_.Get(), directory / L"raytracing.hlsl", "TraceMain", trace_pixel_);
 }
 
 void Renderer::draw(ID3D11PixelShader* pixel, ID3D11ShaderResourceView* input,
     ID3D11RenderTargetView* output, ID3D11ShaderResourceView* neural,
-    ID3D11ShaderResourceView* lut) {
+    ID3D11ShaderResourceView* lut, ID3D11Buffer* parameters) {
     D3D11_VIEWPORT viewport{0, 0, static_cast<float>(resources_.width()),
         static_cast<float>(resources_.height()), 0, 1};
     D3D11_RECT scissor{0, 0, static_cast<LONG>(resources_.width()),
         static_cast<LONG>(resources_.height())};
     ID3D11ShaderResourceView* inputs[3]{input, neural, lut};
-    ID3D11Buffer* constants = constants_.Get();
+    ID3D11Buffer* constants = parameters ? parameters : constants_.Get();
     ID3D11SamplerState* sampler = sampler_.Get();
     context_->OMSetRenderTargets(1, &output, nullptr);
     context_->OMSetBlendState(nullptr, nullptr, 0xffffffff);
@@ -76,12 +78,12 @@ void Renderer::draw(ID3D11PixelShader* pixel, ID3D11ShaderResourceView* input,
     context_->PSSetShaderResources(0, 3, empty);
 }
 
-void Renderer::render_photoreal() {
+void Renderer::render_photoreal(ID3D11ShaderResourceView* input) {
     auto parameters = make_photoreal_constants(config_, resources_.needs_srgb_conversion(),
         !resources_.needs_srgb_conversion(), neural_residual_ != nullptr,
         lut_.size(), frame_index_);
     context_->UpdateSubresource(constants_.Get(), 0, nullptr, &parameters, 0, 0);
-    draw(photoreal_pixel_.Get(), resources_.input(), resources_.stage_output(),
+    draw(photoreal_pixel_.Get(), input, resources_.stage_output(),
         neural_residual_.Get(), lut_.view());
     draw(finish_pixel_.Get(), resources_.stage_input(), resources_.output());
     frame_index_ = frame_index_ >= 4095.0f ? 0.0f : frame_index_ + 1.0f;

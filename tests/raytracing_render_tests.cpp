@@ -54,8 +54,20 @@ void light_and_shadow_cases() {
 
 void directional_light_cases() {
     DirectionalLight light{{0, 3, 4}, {1, 1, 1}, 1.0};
-    require(std::abs(length(light.to_light) - 1.0) < 1e-12,
+    require(std::abs(length(light.to_light()) - 1.0) < 1e-12,
         "directional light normalized at construction");
+
+    DirectionalLight changed;
+    changed.set_direction({0, 0, 2});
+    require(std::abs(length(changed.to_light()) - 1.0) < 1e-12,
+        "directional light normalized when changed");
+    changed.intensity = 0.4;
+    Scene scene({surface(0, -3, 1, 0)}, {{{1, 1, 1}, 0.0}}, {changed});
+    Settings settings;
+    settings.ambient = {0, 0, 0};
+    Vec3 color = trace(scene, {{0, 0, 0}, {0, 0, -1}}, settings);
+    require(std::abs(color.x - 0.4) < 1e-12,
+        "changed light direction preserves diffuse intensity");
 }
 
 void reflection_cases() {

@@ -13,7 +13,7 @@ ctest --test-dir build -C Release --output-on-failure
 cmake --build build --config Release --target neuralfx_package
 ```
 
-The expected output is `build/Release/dxgi.dll` alongside the `build/Release/NeuralFX` folder. The installation package is written to `dist/FSR-ets2-ats-2.0.0.zip`. The version in its name comes from `project(... VERSION ...)` in CMake. Shaders are compiled at runtime during initialization to make testing easier. The DLL uses x64 MASM to preserve the arguments of exports forwarded to Windows DXGI.
+The expected output is `build/Release/dxgi.dll` alongside the `build/Release/NeuralFX` folder. By default, the installation package is written to `dist/FSR-ets2-ats-2.0.0.zip`, using `project(... VERSION ...)` in CMake. Shaders are compiled at runtime during initialization to make testing easier. The DLL uses x64 MASM to preserve the arguments of exports forwarded to Windows DXGI.
 
 Before installing, validate the exports on the same Windows system with `powershell -ExecutionPolicy Bypass -File tools/check-exports.ps1 build/Release/dxgi.dll`. If the script fails, the DLL is not ready for that system.
 
@@ -23,10 +23,10 @@ With Zig 0.16, Ninja, and CMake, run these scripts from the repository root. The
 
 ```sh
 ./scripts/build.sh
-./scripts/package.sh
+./scripts/package.sh 2.0.3
 ```
 
-The output is `build/windows-x64/dxgi.dll` with supporting files in `build/windows-x64/NeuralFX`. This build was compiled as PE x64, passed the proxy smoke test in Wine, and ran in ETS2 1.61.1.1 via Proton with the ray tracing mode enabled.
+Pass the desired `major.minor.patch` version to `package.sh`. It writes `dist/FSR-ets2-ats-<version>.zip` and prints the full path. Without an argument, it uses the project version from CMake. The output is `build/windows-x64/dxgi.dll` with supporting files in `build/windows-x64/NeuralFX`. This build was compiled as PE x64, passed the proxy smoke test in Wine, and ran in ETS2 1.61.1.1 via Proton with the ray tracing mode enabled.
 
 ## Pull request quality gate
 

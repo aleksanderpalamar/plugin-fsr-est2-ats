@@ -1,4 +1,5 @@
 file(READ "${NEURALFX_SOURCE_DIR}/tools/README" instructions)
+string(REPLACE "@VERSION@" "${NEURALFX_PACKAGE_VERSION}" instructions "${instructions}")
 file(READ "${NEURALFX_SOURCE_DIR}/LICENSE" project_license)
 file(READ "${NEURALFX_SOURCE_DIR}/THIRD_PARTY_NOTICES.md" third_party_notices)
 file(WRITE "${NEURALFX_OUTPUT}" "${instructions}\nLicense notices / Avisos de licença\n\n${project_license}\n${third_party_notices}")

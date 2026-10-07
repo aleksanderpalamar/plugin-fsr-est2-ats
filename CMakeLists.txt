@@ -121,17 +121,27 @@ add_custom_target(neuralfx_runtime_assets ALL
 )
 add_dependencies(neuralfx_shader_compile_tests neuralfx_runtime_assets)
 
-set(NEURALFX_PACKAGE_NAME FSR-ets2-ats-${PROJECT_VERSION})
+set(NEURALFX_PACKAGE_VERSION "$ENV{NEURALFX_PACKAGE_VERSION}")
+if(NEURALFX_PACKAGE_VERSION STREQUAL "")
+    set(NEURALFX_PACKAGE_VERSION "${PROJECT_VERSION}")
+endif()
+if(NOT NEURALFX_PACKAGE_VERSION MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+$")
+    message(FATAL_ERROR "NEURALFX_PACKAGE_VERSION must use major.minor.patch")
+endif()
+set(NEURALFX_PACKAGE_NAME FSR-ets2-ats-${NEURALFX_PACKAGE_VERSION})
 add_custom_target(neuralfx_package
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/dist
     COMMAND ${CMAKE_COMMAND}
         "-DNEURALFX_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
         "-DNEURALFX_OUTPUT=$<TARGET_FILE_DIR:dxgi>/README"
+        "-DNEURALFX_PACKAGE_VERSION=${NEURALFX_PACKAGE_VERSION}"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/write_package_readme.cmake"
     COMMAND ${CMAKE_COMMAND} -E tar cf
         ${CMAKE_CURRENT_SOURCE_DIR}/dist/${NEURALFX_PACKAGE_NAME}.zip --format=zip
         $<TARGET_FILE_NAME:dxgi> NeuralFX/neuralfx.ini NeuralFX/shaders
         NeuralFX/luts/neuralfx-cool.cube README
+    COMMAND ${CMAKE_COMMAND} -E echo
+        "Package generated: ${CMAKE_CURRENT_SOURCE_DIR}/dist/${NEURALFX_PACKAGE_NAME}.zip"
     WORKING_DIRECTORY $<TARGET_FILE_DIR:dxgi>
     DEPENDS neuralfx_runtime_assets
     VERBATIM

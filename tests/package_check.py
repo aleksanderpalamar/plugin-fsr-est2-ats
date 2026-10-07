@@ -1,5 +1,5 @@
 from pathlib import Path
-from re import search
+from re import fullmatch, search
 from subprocess import check_output
 from sys import argv, executable
 from zipfile import ZipFile
@@ -53,6 +53,14 @@ def check_lut(package: ZipFile, names: set[str]) -> None:
         raise SystemExit("The package LUT does not match its generator")
 
 
+def check_version(path: Path, readme: str) -> None:
+    version = fullmatch(r"FSR-ets2-ats-(\d+\.\d+\.\d+)\.zip", path.name)
+    if not version:
+        return
+    if not readme.startswith(f"FSR for ETS2 and ATS {version.group(1)} (Windows x64)"):
+        raise SystemExit("Package README version differs from archive version")
+
+
 def check_package(path: Path) -> None:
     with ZipFile(path) as package:
         names = set(package.namelist())
@@ -71,7 +79,9 @@ def check_package(path: Path) -> None:
         config = normalized_text(package.read("NeuralFX/neuralfx.ini"))
         if "mode=raytracing" not in config.splitlines():
             raise SystemExit("Package must start in raytracing mode")
-        check_notices(normalized_text(package.read("README")))
+        readme = normalized_text(package.read("README"))
+        check_notices(readme)
+        check_version(path, readme)
         check_lut(package, names)
 
     print(f"Package verified: {path}")

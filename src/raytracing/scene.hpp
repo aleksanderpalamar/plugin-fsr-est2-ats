@@ -11,10 +11,20 @@ struct Material {
     double reflectivity = 0.0;
 };
 
-struct DirectionalLight {
-    Vec3 direction{0, 1, 0};
-    Vec3 color{1, 1, 1};
-    double intensity = 1.0;
+class DirectionalLight {
+public:
+    Vec3 color;
+    double intensity;
+
+    DirectionalLight(Vec3 direction = {0, 1, 0}, Vec3 color = {1, 1, 1},
+        double intensity = 1.0) noexcept
+        : color(color), intensity(intensity), to_light_(normalized(direction)) {}
+
+    Vec3 to_light() const noexcept { return to_light_; }
+    void set_direction(Vec3 direction) noexcept { to_light_ = normalized(direction); }
+
+private:
+    Vec3 to_light_;
 };
 
 class SceneQuery {

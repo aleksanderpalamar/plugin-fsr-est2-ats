@@ -15,10 +15,9 @@ Vec3 direct_light(const SceneQuery& scene, const Hit& hit,
     Vec3 result = multiply(material.base_color, settings.ambient);
     for (const DirectionalLight& light : scene.lights()) {
         if (light.intensity <= 0.0) continue;
-        Vec3 direction = normalized(light.direction);
-        double cosine = dot(hit.normal, direction);
+        double cosine = dot(hit.normal, light.to_light);
         if (cosine <= 0.0) continue;
-        Ray shadow{hit.position + hit.normal * settings.epsilon, direction};
+        Ray shadow{hit.position + hit.normal * settings.epsilon, light.to_light};
         if (scene.occluded(shadow, settings.epsilon, std::numeric_limits<double>::infinity()))
             continue;
         result = result + multiply(material.base_color, light.color) * (light.intensity * cosine);

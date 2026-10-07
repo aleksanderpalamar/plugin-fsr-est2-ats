@@ -12,9 +12,13 @@ struct Material {
 };
 
 struct DirectionalLight {
-    Vec3 direction{0, 1, 0};
-    Vec3 color{1, 1, 1};
-    double intensity = 1.0;
+    Vec3 to_light;
+    Vec3 color;
+    double intensity;
+
+    DirectionalLight(Vec3 direction = {0, 1, 0}, Vec3 color = {1, 1, 1},
+        double intensity = 1.0) noexcept
+        : to_light(normalized(direction)), color(color), intensity(intensity) {}
 };
 
 class SceneQuery {

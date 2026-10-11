@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 from pathlib import Path
 from re import fullmatch, search
 from subprocess import check_output
@@ -64,7 +65,7 @@ def check_version(path: Path, readme: str) -> None:
         raise SystemExit("Package README version differs from archive version")
 
 
-def check_package(path: Path) -> None:
+def check_package(path: Path, binary: Path | None = None) -> None:
     with ZipFile(path) as package:
         names = set(package.namelist())
         missing = expected_files() - names
@@ -78,6 +79,11 @@ def check_package(path: Path) -> None:
         damaged = package.testzip()
         if damaged:
             raise SystemExit(f"Damaged package file: {damaged}")
+        if binary is not None:
+            if not binary.is_file():
+                raise SystemExit(f"Built DLL not found: {binary}")
+            if package.read("dxgi.dll") != binary.read_bytes():
+                raise SystemExit(f"Packaged DLL differs from built DLL: {binary}")
 
         config = normalized_text(package.read("NeuralFX/neuralfx.ini"))
         if "mode=raytracing" not in config.splitlines():
@@ -91,4 +97,9 @@ def check_package(path: Path) -> None:
 
 
 if __name__ == "__main__":
-    check_package(package_path(argv))
+    parser = ArgumentParser()
+    parser.add_argument("package", nargs="?")
+    parser.add_argument("--binary", type=Path)
+    options = parser.parse_args()
+    arguments = [argv[0]] + ([options.package] if options.package else [])
+    check_package(package_path(arguments), options.binary)

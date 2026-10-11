@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(NeuralFX_ETS2 VERSION 3.0.0 LANGUAGES CXX)
+project(NeuralFX_ETS2 VERSION 3.0.1 LANGUAGES CXX)
 
 add_library(neuralfx_config STATIC src/config/config_parser.cpp src/renderer/lut_data.cpp)
 target_compile_features(neuralfx_config PUBLIC cxx_std_20)
@@ -51,6 +51,7 @@ endif()
 add_library(dxgi SHARED
     src/dllmain.cpp
     src/dxgi/dxgi_proxy.cpp
+    src/dxgi/system_dxgi.cpp
     ${DXGI_STUB_SOURCE}
     src/dxgi/dxgi.def
     src/dxgi/swapchain_hook.cpp

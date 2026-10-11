@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 from unittest import TestCase, skipIf
 from zipfile import ZipFile
 
-from package_check import check_package, package_path
+from package_check import check_lut, check_package, package_path
 
 
 def stub_package_scripts(root: Path) -> Path:
@@ -62,6 +62,16 @@ class PackageScriptTests(TestCase):
 
 
 class PackageCheckTests(TestCase):
+    def test_package_contains_luts_for_both_games(self) -> None:
+        with TemporaryDirectory() as directory:
+            archive_path = Path(directory) / "luts.zip"
+            with ZipFile(archive_path, "w") as archive:
+                for game in ("ets2", "ats"):
+                    source = Path("luts", f"neuralfx-{game}.cube")
+                    archive.write(source, f"NeuralFX/luts/{source.name}")
+            with ZipFile(archive_path) as archive:
+                check_lut(archive, set(archive.namelist()))
+
     def test_selects_current_version_with_older_package_present(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory)
@@ -81,6 +91,22 @@ class PackageCheckTests(TestCase):
             finally:
                 chdir(previous)
 
+    def test_default_package_uses_major_release_version(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            copyfile(Path(__file__).resolve().parents[1] / "CMakeLists.txt",
+                     root / "CMakeLists.txt")
+            packages = root / "dist"
+            packages.mkdir()
+            expected = packages / "FSR-ets2-ats-3.0.0.zip"
+            expected.touch()
+            previous = getcwd()
+            try:
+                chdir(root)
+                self.assertEqual(package_path(["package_check.py"]), Path("dist") / expected.name)
+            finally:
+                chdir(previous)
+
     def test_accepts_windows_line_endings_in_text_files(self) -> None:
         source_path = package_path(["package_check.py"])
         with TemporaryDirectory() as directory:
@@ -88,7 +114,7 @@ class PackageCheckTests(TestCase):
             with ZipFile(source_path) as source, ZipFile(archive_path, "w") as archive:
                 for entry in source.infolist():
                     content = source.read(entry.filename)
-                    if entry.filename in {"README", "NeuralFX/luts/neuralfx-cool.cube"}:
+                    if entry.filename == "README" or entry.filename.endswith(".cube"):
                         content = content.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
                     archive.writestr(entry, content)
 

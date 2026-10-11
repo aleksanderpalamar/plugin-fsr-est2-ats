@@ -5,7 +5,8 @@ from sys import argv, executable
 from zipfile import ZipFile
 
 
-LUT_PATH = "NeuralFX/luts/neuralfx-cool.cube"
+ETS2_LUT_PATH = "NeuralFX/luts/neuralfx-ets2.cube"
+LUT_PATHS = {ETS2_LUT_PATH, "NeuralFX/luts/neuralfx-ats.cube"}
 
 
 def normalized_text(content: bytes) -> str:
@@ -13,7 +14,7 @@ def normalized_text(content: bytes) -> str:
 
 
 def expected_files() -> set[str]:
-    files = {"dxgi.dll", "NeuralFX/neuralfx.ini", "README", LUT_PATH}
+    files = {"dxgi.dll", "NeuralFX/neuralfx.ini", "README"} | LUT_PATHS
     files.update(f"NeuralFX/shaders/{path.name}" for path in Path("shaders").glob("*.hlsl"))
     return files
 
@@ -44,13 +45,15 @@ def check_notices(readme: str) -> None:
 
 def check_lut(package: ZipFile, names: set[str]) -> None:
     lut_files = {name for name in names if name.endswith(".cube")}
-    if lut_files != {LUT_PATH}:
+    if lut_files != LUT_PATHS:
         raise SystemExit(f"Unexpected package LUTs: {sorted(lut_files)}")
     generated = normalized_text(check_output([executable, "scripts/generate_lut.py"]))
-    if normalized_text(Path("luts/neuralfx-cool.cube").read_bytes()) != generated:
-        raise SystemExit("The project LUT does not match its generator")
-    if normalized_text(package.read(LUT_PATH)) != generated:
-        raise SystemExit("The package LUT does not match its generator")
+    if normalized_text(Path("luts/neuralfx-ets2.cube").read_bytes()) != generated:
+        raise SystemExit("The ETS2 LUT does not match its generator")
+    for path in LUT_PATHS:
+        source = Path(path.removeprefix("NeuralFX/"))
+        if normalized_text(package.read(path)) != normalized_text(source.read_bytes()):
+            raise SystemExit(f"The package LUT differs from {source}")
 
 
 def check_version(path: Path, readme: str) -> None:

@@ -38,7 +38,7 @@ def grade(red: int, green: int, blue: int) -> tuple[int, int, int]:
 
 def render_lut() -> str:
     lines = [
-        'TITLE "NeuralFX Cool"',
+        'TITLE "NeuralFX ETS2"',
         "DOMAIN_MIN 0.0 0.0 0.0",
         "DOMAIN_MAX 1.0 1.0 1.0",
         f"LUT_3D_SIZE {SIZE}",

@@ -25,6 +25,10 @@ foreach ($name in $system.Names.Keys) {
     if (-not $proxy.Names.ContainsKey($name)) { $missing += "Missing name: $name" }
 }
 foreach ($ordinal in $system.Ordinals.Keys) {
+    if ($ordinal -gt 40) {
+        $missing += "Unsupported system ordinal: $ordinal"
+        continue
+    }
     if (-not $proxy.Ordinals.ContainsKey($ordinal)) { $missing += "Missing ordinal: $ordinal" }
 }
 if ($missing.Count -gt 0) {

@@ -43,7 +43,11 @@ bool check_exports(HMODULE system, HMODULE proxy) {
     for (DWORD index = 0; index < table->NumberOfFunctions; ++index) {
         if (functions[index] == 0) continue;
         DWORD ordinal = table->Base + index;
-        if (ordinal > 0xffff) return false;
+        if (ordinal > 40) {
+            std::fprintf(stderr, "Unsupported DXGI ordinal: %lu\n",
+                static_cast<unsigned long>(ordinal));
+            return false;
+        }
         if (GetProcAddress(proxy, MAKEINTRESOURCEA(static_cast<WORD>(ordinal)))) continue;
         std::fprintf(stderr, "Missing DXGI ordinal: %lu\n", static_cast<unsigned long>(ordinal));
         return false;

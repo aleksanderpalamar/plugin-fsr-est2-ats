@@ -61,7 +61,7 @@ def export_directory(data: bytes) -> tuple[int, list[tuple[int, int, int]]]:
     return file_offset(rva, entries), entries
 
 
-def exports(path: Path) -> tuple[set[int], set[str]]:
+def exports(path: Path) -> tuple[set[int], set[str], set[int]]:
     data = path.read_bytes()
     table, entries = export_directory(data)
     base = uint32(data, table + 16)
@@ -69,17 +69,20 @@ def exports(path: Path) -> tuple[set[int], set[str]]:
     name_count = uint32(data, table + 24)
     functions = file_offset(uint32(data, table + 28), entries)
     names_table = file_offset(uint32(data, table + 32), entries)
+    name_ordinals = file_offset(uint32(data, table + 36), entries)
     ordinals = {
         base + index for index in range(function_count)
         if uint32(data, functions + index * 4) != 0
     }
     names = set()
+    named_slots = set()
     for index in range(name_count):
         name_rva = uint32(data, names_table + index * 4)
         start = file_offset(name_rva, entries)
         end = data.index(b"\0", start)
         names.add(data[start:end].decode("ascii"))
-    return ordinals, names
+        named_slots.add(base + uint16(data, name_ordinals + index * 2))
+    return ordinals, names, named_slots
 
 
 class DxgiExportTests(TestCase):
@@ -87,7 +90,7 @@ class DxgiExportTests(TestCase):
         proxy_path = Path(__file__).resolve().parents[1] / "build/windows-x64/dxgi.dll"
         if not proxy_path.is_file():
             self.skipTest("Cross-compiled proxy is unavailable")
-        proxy_ordinals, proxy_names = exports(proxy_path)
+        proxy_ordinals, proxy_names, _ = exports(proxy_path)
         self.assertFalse(WINDOWS_11_NAMES - proxy_names, WINDOWS_11_NAMES - proxy_names)
         self.assertFalse(set(range(1, 21)) - proxy_ordinals,
                          set(range(1, 21)) - proxy_ordinals)
@@ -99,7 +102,20 @@ class DxgiExportTests(TestCase):
         proxy_path = Path(__file__).resolve().parents[1] / "build/windows-x64/dxgi.dll"
         if not proxy_path.is_file():
             self.skipTest("Cross-compiled proxy is unavailable")
-        system_ordinals, system_names = exports(Path(system_path))
-        proxy_ordinals, proxy_names = exports(proxy_path)
+        system_ordinals, system_names, _ = exports(Path(system_path))
+        proxy_ordinals, proxy_names, _ = exports(proxy_path)
+        self.assertFalse(system_ordinals - set(range(1, 41)),
+                         system_ordinals - set(range(1, 41)))
         self.assertFalse(system_names - proxy_names, system_names - proxy_names)
         self.assertFalse(system_ordinals - proxy_ordinals, system_ordinals - proxy_ordinals)
+
+    def test_ordinal_forwarding_slots_are_unnamed(self) -> None:
+        proxy_path = Path(__file__).resolve().parents[1] / "build/windows-x64/dxgi.dll"
+        if not proxy_path.is_file():
+            self.skipTest("Cross-compiled proxy is unavailable")
+        proxy_ordinals, _, named_slots = exports(proxy_path)
+        forwarding_slots = set(range(1, 41))
+        self.assertFalse(forwarding_slots - proxy_ordinals,
+                         forwarding_slots - proxy_ordinals)
+        self.assertFalse(forwarding_slots & named_slots,
+                         forwarding_slots & named_slots)

@@ -20,6 +20,26 @@ EXPORTS
     DxgiOrdinal18 @18 NONAME
     DxgiOrdinal19 @19 NONAME
     DxgiOrdinal20 @20 NONAME
+    DxgiOrdinal21 @21 NONAME
+    DxgiOrdinal22 @22 NONAME
+    DxgiOrdinal23 @23 NONAME
+    DxgiOrdinal24 @24 NONAME
+    DxgiOrdinal25 @25 NONAME
+    DxgiOrdinal26 @26 NONAME
+    DxgiOrdinal27 @27 NONAME
+    DxgiOrdinal28 @28 NONAME
+    DxgiOrdinal29 @29 NONAME
+    DxgiOrdinal30 @30 NONAME
+    DxgiOrdinal31 @31 NONAME
+    DxgiOrdinal32 @32 NONAME
+    DxgiOrdinal33 @33 NONAME
+    DxgiOrdinal34 @34 NONAME
+    DxgiOrdinal35 @35 NONAME
+    DxgiOrdinal36 @36 NONAME
+    DxgiOrdinal37 @37 NONAME
+    DxgiOrdinal38 @38 NONAME
+    DxgiOrdinal39 @39 NONAME
+    DxgiOrdinal40 @40 NONAME
     ApplyCompatResolutionQuirking
     CompatString
     CompatValue

@@ -26,7 +26,7 @@ With Zig 0.16, Ninja, and CMake, run these scripts from the repository root. The
 ./scripts/package.sh
 ```
 
-Pass the desired `major.minor.patch` version to `package.sh`. It writes `dist/FSR-ets2-ats-<version>.zip` and prints the full path. Without an argument, it uses the project version from CMake. The output is `build/windows-x64/dxgi.dll` with supporting files in `build/windows-x64/NeuralFX`. This build was compiled as PE x64, passed the proxy smoke test in Wine, and ran in ETS2 1.61.1.1 via Proton with the ray tracing mode enabled.
+Pass the desired `major.minor.patch` or `vmajor.minor.patch` version to `package.sh`. It writes `dist/FSR-ets2-ats-<version>.zip` and prints the full path. Without an argument, it uses the project version from CMake. The output is `build/windows-x64/dxgi.dll` with supporting files in `build/windows-x64/NeuralFX`. This build was compiled as PE x64, passed the proxy smoke test in Wine, and ran in ETS2 1.61.1.1 via Proton with the ray tracing mode enabled.
 
 ## Pull request quality gate
 
@@ -35,6 +35,17 @@ Pull requests targeting `main` run the [PR quality gate](.github/workflows/pr-qu
 Every automated check must pass. Changes to deterministic configuration or LUT rules need unit coverage; shader changes must compile all entry points; proxy changes must pass the DXGI smoke test. Rendering changes also need in-game verification in ETS2 and ATS because CI cannot exercise in-game behavior.
 
 To make the gate mandatory, configure a [GitHub branch ruleset](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches) for `main` that requires pull requests and the `Linux validation` and `Windows validation` status checks.
+
+## Tagged releases
+
+After the release commit is on `main`, push a version tag to build and publish a GitHub Release:
+
+```sh
+git tag v4.0.0
+git push origin v4.0.0
+```
+
+The [tagged release workflow](.github/workflows/tagged-release.yml) accepts `vmajor.minor.patch` tags, validates the Windows x64 package, and uploads `FSR-ets2-ats-<version>.zip` to the Release. The three version numbers can change independently.
 
 ## Installation
 

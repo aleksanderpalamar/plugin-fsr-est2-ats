@@ -60,15 +60,30 @@ class PackageScriptTests(TestCase):
             self.assertEqual((root / "arguments").read_text().splitlines(),
                              ["--target", "neuralfx_package"])
 
+    def test_script_packages_version_from_release_tag(self) -> None:
+        for version in ("4.0.0", "5.0.0", "5.1.0", "5.1.2"):
+            with self.subTest(version=version), TemporaryDirectory() as directory:
+                root = Path(directory)
+                package_script = stub_package_scripts(root)
+                result = run(["bash", str(package_script), f"v{version}"], cwd=root,
+                             env={**environ, "PACKAGE_TEST_DIR": str(root)},
+                             capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual((root / "version").read_text().strip(), version)
+                self.assertEqual((root / "check_arguments").read_text().splitlines(),
+                                 [f"dist/FSR-ets2-ats-{version}.zip", "--binary",
+                                  "build/windows-x64/dxgi.dll"])
+
     def test_script_rejects_invalid_version(self) -> None:
-        with TemporaryDirectory() as directory:
-            root = Path(directory)
-            package_script = stub_package_scripts(root)
-            result = run(["bash", str(package_script), "2.0"], cwd=root,
-                         env={**environ, "PACKAGE_TEST_DIR": str(root)},
-                         capture_output=True, text=True)
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("Usage", result.stderr)
+        for version in ("2.0", "v4.0", "v4.0.0-rc1", "vfoo"):
+            with self.subTest(version=version), TemporaryDirectory() as directory:
+                root = Path(directory)
+                package_script = stub_package_scripts(root)
+                result = run(["bash", str(package_script), version], cwd=root,
+                             env={**environ, "PACKAGE_TEST_DIR": str(root)},
+                             capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Usage", result.stderr)
 
     def test_script_uses_project_version_without_argument(self) -> None:
         with TemporaryDirectory() as directory:

@@ -1,21 +1,62 @@
 LIBRARY dxgi
 EXPORTS
-    ApplyCompatResolutionQuirking @1
-    CompatString @2
-    CompatValue @3
-    DXGIDumpJournal @4
-    PIXBeginCapture @5
-    PIXEndCapture @6
-    PIXGetCaptureState @7
-    SetAppCompatStringPointer @8
-    UpdateHMDEmulationStatus @9
-    CreateDXGIFactory @10
-    CreateDXGIFactory1 @11
-    CreateDXGIFactory2 @12
-    DXGID3D10CreateDevice @13
-    DXGID3D10CreateLayeredDevice @14
-    DXGID3D10GetLayeredDeviceSize @15
-    DXGID3D10RegisterLayers @16
-    DXGIDeclareAdapterRemovalSupport @17
-    DXGIGetDebugInterface1 @18
-    DXGIReportAdapterConfiguration @19
+    DxgiOrdinal1 @1 NONAME
+    DxgiOrdinal2 @2 NONAME
+    DxgiOrdinal3 @3 NONAME
+    DxgiOrdinal4 @4 NONAME
+    DxgiOrdinal5 @5 NONAME
+    DxgiOrdinal6 @6 NONAME
+    DxgiOrdinal7 @7 NONAME
+    DxgiOrdinal8 @8 NONAME
+    DxgiOrdinal9 @9 NONAME
+    DxgiOrdinal10 @10 NONAME
+    DxgiOrdinal11 @11 NONAME
+    DxgiOrdinal12 @12 NONAME
+    DxgiOrdinal13 @13 NONAME
+    DxgiOrdinal14 @14 NONAME
+    DxgiOrdinal15 @15 NONAME
+    DxgiOrdinal16 @16 NONAME
+    DxgiOrdinal17 @17 NONAME
+    DxgiOrdinal18 @18 NONAME
+    DxgiOrdinal19 @19 NONAME
+    DxgiOrdinal20 @20 NONAME
+    DxgiOrdinal21 @21 NONAME
+    DxgiOrdinal22 @22 NONAME
+    DxgiOrdinal23 @23 NONAME
+    DxgiOrdinal24 @24 NONAME
+    DxgiOrdinal25 @25 NONAME
+    DxgiOrdinal26 @26 NONAME
+    DxgiOrdinal27 @27 NONAME
+    DxgiOrdinal28 @28 NONAME
+    DxgiOrdinal29 @29 NONAME
+    DxgiOrdinal30 @30 NONAME
+    DxgiOrdinal31 @31 NONAME
+    DxgiOrdinal32 @32 NONAME
+    DxgiOrdinal33 @33 NONAME
+    DxgiOrdinal34 @34 NONAME
+    DxgiOrdinal35 @35 NONAME
+    DxgiOrdinal36 @36 NONAME
+    DxgiOrdinal37 @37 NONAME
+    DxgiOrdinal38 @38 NONAME
+    DxgiOrdinal39 @39 NONAME
+    DxgiOrdinal40 @40 NONAME
+    ApplyCompatResolutionQuirking
+    CompatString
+    CompatValue
+    DXGIDumpJournal
+    PIXBeginCapture
+    PIXEndCapture
+    PIXGetCaptureState
+    SetAppCompatStringPointer
+    UpdateHMDEmulationStatus
+    CreateDXGIFactory
+    CreateDXGIFactory1
+    CreateDXGIFactory2
+    DXGID3D10CreateDevice
+    DXGID3D10CreateLayeredDevice
+    DXGID3D10GetLayeredDeviceSize
+    DXGID3D10RegisterLayers
+    DXGIDeclareAdapterRemovalSupport
+    DXGIDisableVBlankVirtualization
+    DXGIGetDebugInterface1
+    DXGIReportAdapterConfiguration

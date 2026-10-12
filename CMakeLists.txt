@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(NeuralFX_ETS2 VERSION 3.0.0 LANGUAGES CXX)
+project(NeuralFX_ETS2 VERSION 3.0.1 LANGUAGES CXX)
 
 add_library(neuralfx_config STATIC src/config/config_parser.cpp src/renderer/lut_data.cpp)
 target_compile_features(neuralfx_config PUBLIC cxx_std_20)
@@ -51,6 +51,8 @@ endif()
 add_library(dxgi SHARED
     src/dllmain.cpp
     src/dxgi/dxgi_proxy.cpp
+    src/dxgi/system_dxgi.cpp
+    src/dxgi/system_dxgi_provider.cpp
     ${DXGI_STUB_SOURCE}
     src/dxgi/dxgi.def
     src/dxgi/swapchain_hook.cpp
@@ -84,6 +86,29 @@ target_compile_features(neuralfx_dxgi_smoke PRIVATE cxx_std_20)
 target_link_libraries(neuralfx_dxgi_smoke PRIVATE dxguid kernel32)
 add_dependencies(neuralfx_dxgi_smoke dxgi)
 add_test(NAME neuralfx_dxgi_smoke COMMAND neuralfx_dxgi_smoke $<TARGET_FILE:dxgi>)
+
+add_executable(neuralfx_system_dxgi_provider_tests
+    tests/system_dxgi_provider_tests.cpp src/dxgi/system_dxgi_provider.cpp)
+target_compile_features(neuralfx_system_dxgi_provider_tests PRIVATE cxx_std_20)
+target_include_directories(neuralfx_system_dxgi_provider_tests PRIVATE src)
+add_test(NAME neuralfx_system_dxgi_provider_tests COMMAND neuralfx_system_dxgi_provider_tests)
+
+add_executable(neuralfx_logger_tests tests/logger_tests.cpp src/common/logger.cpp)
+target_compile_features(neuralfx_logger_tests PRIVATE cxx_std_20)
+target_compile_definitions(neuralfx_logger_tests PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_include_directories(neuralfx_logger_tests PRIVATE src)
+target_link_libraries(neuralfx_logger_tests PRIVATE kernel32)
+add_test(NAME neuralfx_logger_tests COMMAND neuralfx_logger_tests)
+
+add_library(neuralfx_logger_loader_probe SHARED tests/logger_loader_probe.cpp src/common/logger.cpp)
+target_compile_features(neuralfx_logger_loader_probe PRIVATE cxx_std_20)
+target_compile_definitions(neuralfx_logger_loader_probe PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_include_directories(neuralfx_logger_loader_probe PRIVATE src)
+target_link_libraries(neuralfx_logger_loader_probe PRIVATE kernel32)
+add_executable(neuralfx_logger_loader_tests tests/logger_loader_tests.cpp)
+add_dependencies(neuralfx_logger_loader_tests neuralfx_logger_loader_probe)
+add_test(NAME neuralfx_logger_loader_tests
+    COMMAND neuralfx_logger_loader_tests $<TARGET_FILE:neuralfx_logger_loader_probe>)
 
 add_executable(neuralfx_shader_compile_tests tests/shader_compile.cpp)
 target_compile_features(neuralfx_shader_compile_tests PRIVATE cxx_std_20)

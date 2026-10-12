@@ -22,11 +22,32 @@ def stub_package_scripts(root: Path) -> Path:
         encoding="utf-8",
     )
     build_script.chmod(0o755)
+    tests = root / "tests"
+    tests.mkdir()
+    (tests / "package_check.py").write_text(
+        "from os import environ\n"
+        "from pathlib import Path\n"
+        "from sys import argv\n"
+        "Path(environ['PACKAGE_TEST_DIR'], 'check_arguments').write_text('\\n'.join(argv[1:]))\n",
+        encoding="utf-8",
+    )
     return package_script
 
 
 @skipIf(name == "nt", "Package script requires a POSIX shell")
 class PackageScriptTests(TestCase):
+    def test_script_checks_built_binary_after_packaging(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            package_script = stub_package_scripts(root)
+            result = run(["bash", str(package_script), "3.0.1"], cwd=root,
+                         env={**environ, "PACKAGE_TEST_DIR": str(root)},
+                         capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((root / "check_arguments").read_text().splitlines(),
+                             ["dist/FSR-ets2-ats-3.0.1.zip", "--binary",
+                              "build/windows-x64/dxgi.dll"])
+
     def test_script_passes_requested_version_to_build(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory)
@@ -91,14 +112,14 @@ class PackageCheckTests(TestCase):
             finally:
                 chdir(previous)
 
-    def test_default_package_uses_major_release_version(self) -> None:
+    def test_default_package_uses_current_release_version(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory)
             copyfile(Path(__file__).resolve().parents[1] / "CMakeLists.txt",
                      root / "CMakeLists.txt")
             packages = root / "dist"
             packages.mkdir()
-            expected = packages / "FSR-ets2-ats-3.0.0.zip"
+            expected = packages / "FSR-ets2-ats-3.0.1.zip"
             expected.touch()
             previous = getcwd()
             try:
@@ -129,3 +150,17 @@ class PackageCheckTests(TestCase):
                     archive.writestr(entry, source.read(entry.filename))
             with self.assertRaisesRegex(SystemExit, "version"):
                 check_package(archive_path)
+
+    def test_rejects_package_with_stale_binary(self) -> None:
+        source_path = package_path(["package_check.py"])
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive_path = root / source_path.name
+            binary_path = root / "dxgi.dll"
+            binary_path.write_bytes(b"current")
+            with ZipFile(source_path) as source, ZipFile(archive_path, "w") as archive:
+                for entry in source.infolist():
+                    content = b"stale" if entry.filename == "dxgi.dll" else source.read(entry.filename)
+                    archive.writestr(entry, content)
+            with self.assertRaisesRegex(SystemExit, "DLL differs"):
+                check_package(archive_path, binary_path)

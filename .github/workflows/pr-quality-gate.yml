@@ -42,8 +42,9 @@ jobs:
       - name: Build and check package
         run: |
           ./scripts/package.sh
-          python3 tests/package_check.py
+          python3 tests/package_check.py --binary build/windows-x64/dxgi.dll
           python3 -m unittest discover -s tests -p package_check_test.py
+          python3 -m unittest discover -s tests -p dxgi_exports_test.py
 
   windows:
     name: Windows validation
@@ -62,5 +63,5 @@ jobs:
         run: cmake --build build/windows --config Release --target neuralfx_package
       - name: Check package contents
         run: |
-          python tests/package_check.py
+          python tests/package_check.py --binary build/windows/Release/dxgi.dll
           python -m unittest discover -s tests -p package_check_test.py

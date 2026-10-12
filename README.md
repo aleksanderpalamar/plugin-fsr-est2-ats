@@ -1,6 +1,6 @@
 # NeuralFX-ETS2
 
-Version 3.0.0 is a DXGI proxy for D3D11 post-processing in Euro Truck Simulator 2 and American Truck Simulator. It applies screen-space reflections and approximate indirect lighting to the game's SDR image using a captured depth buffer, followed by photorealistic grading, the included LUTs, and RCAS sharpening. The ray tracing mode was visually tested in ETS2 1.61.1.1 via Proton; ATS still needs an in-game test of this mode.
+Version 3.0.1 is a DXGI proxy for D3D11 post-processing in Euro Truck Simulator 2 and American Truck Simulator. It applies screen-space reflections and approximate indirect lighting to the game's SDR image using a captured depth buffer, followed by photorealistic grading, the included LUTs, and RCAS sharpening. The ray tracing mode was visually tested in ETS2 1.61.1.1 via Proton; ATS still needs an in-game test of this mode.
 
 ## Building on Windows
 
@@ -13,7 +13,7 @@ ctest --test-dir build -C Release --output-on-failure
 cmake --build build --config Release --target neuralfx_package
 ```
 
-The expected output is `build/Release/dxgi.dll` alongside the `build/Release/NeuralFX` folder. By default, the installation package is written to `dist/FSR-ets2-ats-3.0.0.zip`, using `project(... VERSION ...)` in CMake. Shaders are compiled at runtime during initialization to make testing easier. The DLL uses x64 MASM to preserve the arguments of exports forwarded to Windows DXGI.
+The expected output is `build/Release/dxgi.dll` alongside the `build/Release/NeuralFX` folder. By default, the installation package is written to `dist/FSR-ets2-ats-3.0.1.zip`, using `project(... VERSION ...)` in CMake. Shaders are compiled at runtime during initialization to make testing easier. The DLL uses x64 MASM to preserve the arguments of exports forwarded to Windows DXGI.
 
 Before installing, validate the exports on the same Windows system with `powershell -ExecutionPolicy Bypass -File tools/check-exports.ps1 build/Release/dxgi.dll`. If the script fails, the DLL is not ready for that system.
 
@@ -63,7 +63,7 @@ In `photoreal` and `raytracing` modes, the backbuffer is copied before `Present`
 - Input and output resolutions are the same. EASU is disabled until a lower-resolution scene color target can be identified reliably and the HUD can be separated. This version does not provide FSR1 upscaling.
 - The plugin captures a depth target for screen-space ray tracing. There is no DirectML/ONNX, overlay, F9 capture, G-buffer detection, motion vectors, or temporal upscaling. Sharpening implements the core RCAS equations in HLSL, with numerical safeguards at the edges.
 - The hooks cover swapchains created by factories obtained through `CreateDXGIFactory`, `CreateDXGIFactory1`, and `CreateDXGIFactory2`. Swapchain creation and depth capture were observed in ETS2 1.61.1.1 via Proton.
-- The proxy's list of 19 exports and ordinals must be compared with the `dxgi.dll` on the target Windows system before use. Additional exports and differences between versions do not yet have guaranteed parity. At this stage, the DLL should not be distributed as a general-purpose DXGI replacement.
+- The proxy forwards DXGI calls by name or by the original ordinal at runtime. It provides ordinal forwarding slots 1 through 40; the Windows DXGI observed during development uses slots 1 through 20. Run `tools/check-exports.ps1` against the target Windows installation before use. Systems with ordinals above 40 are unsupported. Native Windows testing of version 3.0.1 produced a startup crash that is under investigation.
 
 ## Step-by-step validation in ETS2
 

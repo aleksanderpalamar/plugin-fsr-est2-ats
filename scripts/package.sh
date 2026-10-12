@@ -13,3 +13,11 @@ if (( $# == 1 )); then
 fi
 
 "$script_dir/build.sh" --target neuralfx_package
+check_args=()
+if (( $# == 1 )); then
+    check_args+=("dist/FSR-ets2-ats-$1.zip")
+fi
+(
+    cd "$script_dir/.."
+    python3 -B tests/package_check.py "${check_args[@]}" --binary build/windows-x64/dxgi.dll
+)

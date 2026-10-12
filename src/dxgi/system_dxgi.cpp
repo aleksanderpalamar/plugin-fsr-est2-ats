@@ -1,4 +1,5 @@
 #include "dxgi/system_dxgi.hpp"
+#include "dxgi/system_dxgi_provider.hpp"
 #include "common/logger.hpp"
 
 #include <bit>
@@ -7,12 +8,6 @@
 extern "C" IMAGE_DOS_HEADER __ImageBase;
 
 namespace {
-struct SystemDxgi {
-    HMODULE module = nullptr;
-    DWORD search_error = ERROR_SUCCESS;
-    DWORD fallback_error = ERROR_SUCCESS;
-};
-
 SystemDxgi load_system_dxgi() noexcept {
     wchar_t path[MAX_PATH]{};
     UINT length = GetSystemDirectoryW(path, MAX_PATH);
@@ -30,25 +25,26 @@ SystemDxgi load_system_dxgi() noexcept {
     return {module, search_error, ERROR_SUCCESS};
 }
 
-const SystemDxgi& system_dxgi() noexcept {
-    static const SystemDxgi library = []() noexcept {
-        SystemDxgi loaded = load_system_dxgi();
-        if (!loaded.module) {
-            neuralfx::log("System DXGI load failed: search_win32="
-                + std::to_string(loaded.search_error) + " fallback_win32="
-                + std::to_string(loaded.fallback_error));
-        }
-        if (loaded.module == reinterpret_cast<HMODULE>(&__ImageBase)) {
-            neuralfx::log("System DXGI load returned the proxy module");
-            return SystemDxgi{nullptr, ERROR_INVALID_DATA, ERROR_SUCCESS};
-        }
+SystemDxgi load_checked_system_dxgi() noexcept {
+    SystemDxgi loaded = load_system_dxgi();
+    if (!loaded.module) {
+        neuralfx::log("System DXGI load failed: search_win32="
+            + std::to_string(loaded.search_error) + " fallback_win32="
+            + std::to_string(loaded.fallback_error));
         return loaded;
-    }();
-    return library;
+    }
+    if (loaded.module != reinterpret_cast<HMODULE>(&__ImageBase)) return loaded;
+    neuralfx::log("System DXGI load returned the proxy module");
+    return {nullptr, ERROR_INVALID_DATA, ERROR_SUCCESS};
+}
+
+SystemDxgi system_dxgi() noexcept {
+    static SystemDxgiProvider provider(load_checked_system_dxgi);
+    return provider.get();
 }
 
 void* find_export(const char* name) noexcept {
-    const auto& library = system_dxgi();
+    const auto library = system_dxgi();
     if (!library.module) {
         SetLastError(library.fallback_error == ERROR_SUCCESS
             ? library.search_error : library.fallback_error);
@@ -77,7 +73,7 @@ void* resolve_system_dxgi_export(const char* name) noexcept {
 }
 
 void* resolve_system_dxgi_ordinal(unsigned ordinal) noexcept {
-    const auto& library = system_dxgi();
+    const auto library = system_dxgi();
     if (!library.module || ordinal == 0 || ordinal > 0xffff) {
         DWORD error = library.module ? ERROR_INVALID_PARAMETER
             : (library.fallback_error == ERROR_SUCCESS ? library.search_error : library.fallback_error);

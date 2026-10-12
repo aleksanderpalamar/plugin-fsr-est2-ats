@@ -52,6 +52,7 @@ add_library(dxgi SHARED
     src/dllmain.cpp
     src/dxgi/dxgi_proxy.cpp
     src/dxgi/system_dxgi.cpp
+    src/dxgi/system_dxgi_provider.cpp
     ${DXGI_STUB_SOURCE}
     src/dxgi/dxgi.def
     src/dxgi/swapchain_hook.cpp
@@ -85,6 +86,12 @@ target_compile_features(neuralfx_dxgi_smoke PRIVATE cxx_std_20)
 target_link_libraries(neuralfx_dxgi_smoke PRIVATE dxguid kernel32)
 add_dependencies(neuralfx_dxgi_smoke dxgi)
 add_test(NAME neuralfx_dxgi_smoke COMMAND neuralfx_dxgi_smoke $<TARGET_FILE:dxgi>)
+
+add_executable(neuralfx_system_dxgi_provider_tests
+    tests/system_dxgi_provider_tests.cpp src/dxgi/system_dxgi_provider.cpp)
+target_compile_features(neuralfx_system_dxgi_provider_tests PRIVATE cxx_std_20)
+target_include_directories(neuralfx_system_dxgi_provider_tests PRIVATE src)
+add_test(NAME neuralfx_system_dxgi_provider_tests COMMAND neuralfx_system_dxgi_provider_tests)
 
 add_executable(neuralfx_logger_tests tests/logger_tests.cpp src/common/logger.cpp)
 target_compile_features(neuralfx_logger_tests PRIVATE cxx_std_20)

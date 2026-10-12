@@ -86,6 +86,23 @@ target_link_libraries(neuralfx_dxgi_smoke PRIVATE dxguid kernel32)
 add_dependencies(neuralfx_dxgi_smoke dxgi)
 add_test(NAME neuralfx_dxgi_smoke COMMAND neuralfx_dxgi_smoke $<TARGET_FILE:dxgi>)
 
+add_executable(neuralfx_logger_tests tests/logger_tests.cpp src/common/logger.cpp)
+target_compile_features(neuralfx_logger_tests PRIVATE cxx_std_20)
+target_compile_definitions(neuralfx_logger_tests PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_include_directories(neuralfx_logger_tests PRIVATE src)
+target_link_libraries(neuralfx_logger_tests PRIVATE kernel32)
+add_test(NAME neuralfx_logger_tests COMMAND neuralfx_logger_tests)
+
+add_library(neuralfx_logger_loader_probe SHARED tests/logger_loader_probe.cpp src/common/logger.cpp)
+target_compile_features(neuralfx_logger_loader_probe PRIVATE cxx_std_20)
+target_compile_definitions(neuralfx_logger_loader_probe PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_include_directories(neuralfx_logger_loader_probe PRIVATE src)
+target_link_libraries(neuralfx_logger_loader_probe PRIVATE kernel32)
+add_executable(neuralfx_logger_loader_tests tests/logger_loader_tests.cpp)
+add_dependencies(neuralfx_logger_loader_tests neuralfx_logger_loader_probe)
+add_test(NAME neuralfx_logger_loader_tests
+    COMMAND neuralfx_logger_loader_tests $<TARGET_FILE:neuralfx_logger_loader_probe>)
+
 add_executable(neuralfx_shader_compile_tests tests/shader_compile.cpp)
 target_compile_features(neuralfx_shader_compile_tests PRIVATE cxx_std_20)
 target_link_libraries(neuralfx_shader_compile_tests PRIVATE ${D3DCOMPILER_LIBRARY})

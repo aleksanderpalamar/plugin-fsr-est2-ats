@@ -37,13 +37,14 @@ SteamScreenshotFunctions bind(HMODULE module) noexcept {
     functions.hook = resolve<decltype(functions.hook)>(module, "SteamAPI_ISteamScreenshots_HookScreenshots");
     functions.hooked = resolve<decltype(functions.hooked)>(module, "SteamAPI_ISteamScreenshots_IsScreenshotsHooked");
     functions.write = resolve<decltype(functions.write)>(module, "SteamAPI_ISteamScreenshots_WriteScreenshot");
+    functions.trigger = resolve<decltype(functions.trigger)>(module, "SteamAPI_ISteamScreenshots_TriggerScreenshot");
     functions.standard_dispatch = standard_dispatch();
     return functions;
 }
 
 bool complete(const SteamScreenshotFunctions& api) noexcept {
     return api.standard_dispatch && api.user && api.pipe && api.screenshots &&
-        api.register_callback && api.unregister_callback && api.hook && api.hooked && api.write;
+        api.register_callback && api.unregister_callback && api.hook && api.hooked && api.write && api.trigger;
 }
 }
 

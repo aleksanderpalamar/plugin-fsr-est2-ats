@@ -5,7 +5,7 @@
 namespace neuralfx {
 enum class ScreenshotActivation { Active, Unavailable, Conflict };
 enum class ScreenshotEvent { Activated, Conflict, ReadFailed, WriteFailed, Lost,
-    Submitted, Ready, ReadyFailed };
+    Submitted, Ready, ReadyFailed, FallbackRequested, FallbackFailed };
 
 class ScreenshotObserver {
 public:
@@ -29,6 +29,7 @@ public:
     virtual bool active() noexcept = 0;
     virtual void deactivate() noexcept = 0;
     virtual std::uint32_t write(const RgbImage& image) noexcept = 0;
+    virtual bool retry_original(std::uint32_t requests) noexcept = 0;
 };
 
 class ScreenshotReader {

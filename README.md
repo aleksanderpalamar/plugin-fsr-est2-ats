@@ -71,7 +71,11 @@ In `photoreal` and `raytracing` modes, the backbuffer is copied before `Present`
 
 The screenshot key remains configured and handled by Steam (F12 by default). NeuralFX intercepts the game's imported callback registration during DLL attachment. It relays the game's existing `ScreenshotRequested_t` handler to final-frame capture only after the renderer and Steam API are ready. When the game has no existing handler, NeuralFX registers its own and enables `HookScreenshots(true)`. Manual callback dispatch and existing handlers that could not be intercepted remain unsupported. The plugin uses the game's callback loop and does not call `SteamAPI_Init`, `SteamAPI_Shutdown`, or `SteamAPI_RunCallbacks` itself.
 
+Handlers registered after activation are also intercepted. NeuralFX delegates each request once and preserves the game's hook when that handler becomes available.
+
 A request waits for an eligible frame. NeuralFX reads the final backbuffer after all active passes, converts its RGBA/BGRA pixels to 24-bit RGB, and calls `WriteScreenshot` before forwarding `Present`. GPU readback occurs only for pending requests. With `enabled=false` or `mode=hook`, it submits the original game frame. If capture or submission fails, the integration restores the previous handler and logs the failure. The game's original hook state and callback unregistering remain intact. Steam writes the library entry asynchronously.
+
+After a failure, the consumed request and remaining queued requests are reissued through `TriggerScreenshot` after restoring the previous handler. The game's callback loop or Steam Overlay handles these requests. If the Steam API is unavailable, the inability to reissue them is logged explicitly.
 
 The supported screenshot path uses single-sample, 8-bit RGBA/BGRA UNORM or SRGB backbuffers. Successful interception, activation, submission, and completion are recorded in `NeuralFX/logs/neuralfx.log`. The integration test verifies one processed capture when a game already hooks screenshots; it uses a simulated Steam API and does not replace real Steam validation.
 

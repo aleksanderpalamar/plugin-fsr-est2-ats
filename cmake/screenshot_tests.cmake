@@ -6,7 +6,8 @@ target_compile_features(neuralfx_screenshots PUBLIC cxx_std_20)
 target_include_directories(neuralfx_screenshots PUBLIC src)
 
 foreach(test IN ITEMS screenshot_rgb screenshot_coordinator steam_screenshot_transport
-    steam_callback_abi steam_callback_relay screenshot_swapchain_selection)
+    steam_callback_abi steam_callback_relay steam_late_callback screenshot_fallback
+    screenshot_swapchain_selection)
     add_executable(neuralfx_${test}_tests tests/${test}_tests.cpp)
     target_link_libraries(neuralfx_${test}_tests PRIVATE neuralfx_screenshots)
     add_test(NAME neuralfx_${test}_tests COMMAND neuralfx_${test}_tests)

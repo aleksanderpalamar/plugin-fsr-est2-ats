@@ -4,6 +4,7 @@
 #include <wrl/client.h>
 #include <cstdio>
 #include <cstdlib>
+#include <string_view>
 
 namespace {
 using Microsoft::WRL::ComPtr;
@@ -42,12 +43,16 @@ bool final_frame(ID3D11Device* device, ID3D11DeviceContext* context, IDXGISwapCh
     return SUCCEEDED(chain->Present(0, 0));
 }
 
-int exercise(HWND output) {
+void register_game(neuralfx::SteamCallback& game) {
+    SteamAPI_RegisterCallback(&game, 2302);
+    SteamAPI_ISteamScreenshots_HookScreenshots(SteamAPI_SteamScreenshots_v003(), true);
+}
+
+int exercise(HWND output, bool late_handler) {
     GameEvents events;
     neuralfx::SteamScreenshotCallback game{2302};
     game.listen(&events);
-    SteamAPI_RegisterCallback(&game, 2302);
-    SteamAPI_ISteamScreenshots_HookScreenshots(SteamAPI_SteamScreenshots_v003(), true);
+    if (!late_handler) register_game(game);
     static ComPtr<IDXGIFactory> factory;
     if (FAILED(CreateDXGIFactory(IID_PPV_ARGS(&factory)))) return 2;
     static ComPtr<ID3D11Device> device;
@@ -70,6 +75,7 @@ int exercise(HWND output) {
     if (FAILED(factory->CreateSwapChain(device.Get(), &description, &chain))) return 4;
     if (!final_frame(device.Get(), context.Get(), chain.Get())) return 5;
     if (ScreenshotTest_Writes() != 0) return 6;
+    if (late_handler) register_game(game);
     ScreenshotTest_Request();
     SteamAPI_RunCallbacks();
     if (!final_frame(device.Get(), context.Get(), chain.Get())) return 7;
@@ -87,10 +93,12 @@ int exercise(HWND output) {
 }
 }
 
-int main() {
+int main(int count, char** arguments) {
+    bool late_handler = count == 2 && std::string_view(arguments[1]) == "--late-handler";
+    if (count > 2 || (count == 2 && !late_handler)) return 1;
     auto output = window();
     if (!output) return 1;
-    int result = exercise(output);
+    int result = exercise(output, late_handler);
     DestroyWindow(output);
     TerminateProcess(GetCurrentProcess(), static_cast<UINT>(result));
     return result;

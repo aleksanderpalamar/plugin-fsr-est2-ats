@@ -21,11 +21,13 @@ private:
     void process(const void* swapchain, FrameStatus frame, ScreenshotReader& reader);
     bool take_request() noexcept;
     void stop(ScreenshotEvent event) noexcept;
+    void restore_requests(std::uint32_t count) noexcept;
 
     ScreenshotTransport& transport_;
     ScreenshotObserver& observer_;
     State state_ = State::Waiting;
     const void* active_swapchain_ = nullptr;
     std::atomic_uint32_t requests_{0};
+    std::uint32_t in_flight_ = 0;
 };
 }

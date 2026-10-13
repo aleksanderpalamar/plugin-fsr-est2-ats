@@ -25,6 +25,7 @@ void register_callback(SteamCallback* callback, int id) {
     if (id == 2301) ready = callback;
 }
 void unregister_callback(SteamCallback* callback) { ++unregistrations; callback->flags = 0; }
+void trigger(void*) {}
 std::uint32_t write(void* self, void* rgb, std::uint32_t size, int width, int height) {
     ++writes;
     if (self != &hooked || size != 3 || width != 1 || height != 1) return 0;
@@ -43,7 +44,7 @@ struct Events final : ScreenshotEvents {
 
 int main() {
     SteamScreenshotFunctions api{user, user, screenshots, register_callback,
-        unregister_callback, hook, is_hooked, write, true};
+        unregister_callback, hook, is_hooked, write, true, trigger};
     SteamScreenshotTransport transport(api);
     Events events;
     if (!transport.available()) return 1;
@@ -56,6 +57,9 @@ int main() {
     api.unregister_callback = nullptr;
     if (transport.available()) return 4;
     api.unregister_callback = unregister_callback;
+    api.trigger = nullptr;
+    if (transport.available()) return 18;
+    api.trigger = trigger;
     hooked = true;
     if (transport.activate(events) != ScreenshotActivation::Conflict || registrations != 0) return 5;
     if (hook_calls != 0) return 6;
@@ -67,6 +71,7 @@ int main() {
     if (transport.activate(events) != ScreenshotActivation::Unavailable || hooked) return 8;
     hook_failure = false;
     if (transport.activate(events) != ScreenshotActivation::Active || !transport.active()) return 9;
+    if (transport.retry_original(1)) return 19;
     if (!request || !ready || request->size() != 1 || ready->size() != 8) return 10;
     request->run(nullptr);
     request->run(nullptr, false, 0);

@@ -31,11 +31,16 @@ bool SteamCallbackRelay::release(SteamCallback* original, SteamCallbackRegistrat
 
 bool SteamCallbackRelay::matches(SteamCallback* original) const noexcept { return original_.load() == original; }
 bool SteamCallbackRelay::occupied() const noexcept { return original_.load() != nullptr; }
+bool SteamCallbackRelay::live() const {
+    std::lock_guard lock(mutex_);
+    return occupied() && registered();
+}
 bool SteamCallbackRelay::activate(ScreenshotEvents& events) {
     std::lock_guard lock(mutex_);
     if (!occupied() || !registered()) return false;
     routing_->leader.store(this);
     routing_->events.store(&events);
+    routing_->strategy.store(SteamCallbackRouting::Strategy::Relay);
     return true;
 }
 
@@ -43,8 +48,10 @@ void SteamCallbackRelay::dispatch(void* data, bool extended_call, bool failed, s
     std::lock_guard lock(mutex_);
     auto* original = original_.load();
     if (!original) return;
+    auto strategy = routing_->strategy.load();
+    if (strategy == SteamCallbackRouting::Strategy::Suppress) return;
     auto* events = routing_->events.load();
-    if (!events) {
+    if (strategy == SteamCallbackRouting::Strategy::Forward || !events) {
         forward(original, data, extended_call, failed, call);
         return;
     }

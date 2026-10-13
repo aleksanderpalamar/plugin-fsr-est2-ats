@@ -40,6 +40,7 @@ __declspec(dllexport) void SteamAPI_ISteamScreenshots_HookScreenshots(void*, boo
     hooked = enable;
 }
 __declspec(dllexport) bool SteamAPI_ISteamScreenshots_IsScreenshotsHooked(void*) { return hooked; }
+__declspec(dllexport) void SteamAPI_ISteamScreenshots_TriggerScreenshot(void*) { pending = true; }
 __declspec(dllexport) std::uint32_t SteamAPI_ISteamScreenshots_WriteScreenshot(
     void*, void* rgb, std::uint32_t size, int image_width, int image_height) {
     if (!rgb || size < 3 || size != image_width * image_height * 3u) return 0;

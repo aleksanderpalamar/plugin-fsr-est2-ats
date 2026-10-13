@@ -33,6 +33,7 @@ void* screenshots() { return &hooked; }
 void hook(void*, bool value) { hooked = value; }
 bool is_hooked(void*) { return hooked; }
 std::uint32_t write(void*, void*, std::uint32_t, int, int) { return 1; }
+void trigger(void*) {}
 struct Events final : ScreenshotEvents {
     int requests = 0;
     void requested() noexcept override { ++requests; }
@@ -53,7 +54,7 @@ int cooperative() {
     if (registered.size() != 2 || !game.registered() || !second.registered()) return 1;
     request();
     if (game_events.requests != 2) return 2;
-    SteamScreenshotFunctions api{user, user, screenshots, add, remove, hook, is_hooked, write, true};
+    SteamScreenshotFunctions api{user, user, screenshots, add, remove, hook, is_hooked, write, true, trigger};
     SteamScreenshotTransport transport(api, &relays);
     if (transport.activate(plugin_events) != ScreenshotActivation::Active) return 3;
     request();

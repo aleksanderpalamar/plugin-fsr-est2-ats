@@ -28,4 +28,6 @@ add_custom_target(neuralfx_screenshot_host_assets ALL
     DEPENDS dxgi)
 add_dependencies(neuralfx_steam_screenshot_host neuralfx_screenshot_host_assets)
 add_test(NAME neuralfx_steam_screenshot_host COMMAND neuralfx_steam_screenshot_host)
-set_tests_properties(neuralfx_steam_screenshot_host PROPERTIES TIMEOUT 45)
+add_test(NAME neuralfx_steam_screenshot_host_late COMMAND neuralfx_steam_screenshot_host --late-handler)
+set_tests_properties(neuralfx_steam_screenshot_host neuralfx_steam_screenshot_host_late
+    PROPERTIES TIMEOUT 45 RESOURCE_LOCK screenshot_host)

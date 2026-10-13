@@ -15,6 +15,8 @@ void ScreenshotLog::report(ScreenshotEvent event, std::uint32_t handle, int resu
     case ScreenshotEvent::Submitted: description = "processed RGB submitted to WriteScreenshot"; break;
     case ScreenshotEvent::Ready: description = "ScreenshotReady success"; break;
     case ScreenshotEvent::ReadyFailed: description = "ScreenshotReady failed"; break;
+    case ScreenshotEvent::FallbackRequested: description = "pending screenshots reissued to previous handling via TriggerScreenshot"; break;
+    case ScreenshotEvent::FallbackFailed: description = "unable to reissue pending screenshots; Steam API unavailable"; break;
     }
     char message[256]{};
     std::snprintf(message, sizeof(message), "Steam screenshot: %s handle=%lu result=%d",

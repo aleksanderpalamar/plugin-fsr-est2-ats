@@ -45,6 +45,7 @@ struct Transport final : ScreenshotTransport {
     }
     bool active() noexcept override { return present && hooked; }
     void deactivate() noexcept override { ++stops; hooked = false; }
+    bool retry_original(std::uint32_t) noexcept override { return present && !hooked; }
     std::uint32_t write(const RgbImage& image) noexcept override {
         ++writes;
         if (image.pixels != std::vector<std::uint8_t>{12, 34, 56}) return 0;

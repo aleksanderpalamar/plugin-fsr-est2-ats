@@ -1,5 +1,7 @@
 #include "screenshots/coordinator.hpp"
 
+#include <utility>
+
 namespace neuralfx {
 namespace {
 constexpr std::uint32_t accepting = 1u << 31;
@@ -45,6 +47,7 @@ void ScreenshotCoordinator::process(const void* swapchain, FrameStatus frame,
         return;
     }
     if (!take_request()) return;
+    in_flight_ = 1;
     auto image = reader.capture();
     if (!image) {
         stop(ScreenshotEvent::ReadFailed);
@@ -55,6 +58,7 @@ void ScreenshotCoordinator::process(const void* swapchain, FrameStatus frame,
         stop(ScreenshotEvent::WriteFailed);
         return;
     }
+    in_flight_ = 0;
     observer_.report(ScreenshotEvent::Submitted, handle);
 }
 
@@ -68,10 +72,18 @@ bool ScreenshotCoordinator::reset(const void* swapchain) noexcept {
 }
 
 void ScreenshotCoordinator::stop(ScreenshotEvent event) noexcept {
-    requests_.store(0);
+    auto pending = (requests_.exchange(0) & count_mask) + std::exchange(in_flight_, 0u);
     if (state_ == State::Active) transport_.deactivate();
     state_ = State::Disabled;
     observer_.report(event);
+    restore_requests(pending);
+}
+
+void ScreenshotCoordinator::restore_requests(std::uint32_t count) noexcept {
+    if (count == 0) return;
+    bool restored = transport_.retry_original(count);
+    observer_.report(restored ? ScreenshotEvent::FallbackRequested : ScreenshotEvent::FallbackFailed,
+        0, static_cast<int>(count));
 }
 
 void ScreenshotCoordinator::requested() noexcept {

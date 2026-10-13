@@ -37,6 +37,31 @@ bool SteamCallbackRelays::activate(ScreenshotEvents& events) noexcept {
     return false;
 }
 
-bool SteamCallbackRelays::active() const noexcept { return routing_.events.load() != nullptr; }
-void SteamCallbackRelays::deactivate() noexcept { routing_.events.store(nullptr); }
+bool SteamCallbackRelays::watch() noexcept {
+    if (!complete_.load()) return false;
+    routing_.leader.store(nullptr);
+    routing_.events.store(nullptr);
+    routing_.strategy.store(SteamCallbackRouting::Strategy::Suppress);
+    if (complete_.load()) return true;
+    deactivate();
+    return false;
+}
+
+bool SteamCallbackRelays::has_callbacks() const noexcept {
+    for (const auto& relay : relays_)
+        if (relay.live()) return true;
+    return false;
+}
+
+bool SteamCallbackRelays::active() const noexcept {
+    if (!complete_.load()) return false;
+    auto strategy = routing_.strategy.load();
+    if (strategy == SteamCallbackRouting::Strategy::Suppress) return true;
+    return strategy == SteamCallbackRouting::Strategy::Relay && routing_.events.load() && routing_.leader.load();
+}
+void SteamCallbackRelays::deactivate() noexcept {
+    routing_.strategy.store(SteamCallbackRouting::Strategy::Forward);
+    routing_.events.store(nullptr);
+    routing_.leader.store(nullptr);
+}
 }

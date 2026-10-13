@@ -2,6 +2,7 @@
 #include "dxgi/context_hook.hpp"
 #include "dxgi/vtable_patch.hpp"
 #include "renderer/renderer.hpp"
+#include "screenshots/integration.hpp"
 #include "common/logger.hpp"
 
 #include <windows.h>
@@ -60,11 +61,13 @@ HRESULT STDMETHODCALLTYPE on_present(IDXGISwapChain* swapchain, UINT interval, U
     if (in_hook || (flags & DXGI_PRESENT_TEST)) return original_present(swapchain, interval, flags);
     in_hook = true;
     set_plugin_present(true);
+    FrameStatus frame = FrameStatus::Failed;
     try {
-        Renderer::instance().present(swapchain);
+        frame = Renderer::instance().present(swapchain);
     } catch (...) {
         log("Unexpected exception in Present hook");
     }
+    present_steam_screenshot(swapchain, frame);
     set_plugin_present(false);
     in_hook = false;
     return original_present(swapchain, interval, flags);
@@ -72,6 +75,7 @@ HRESULT STDMETHODCALLTYPE on_present(IDXGISwapChain* swapchain, UINT interval, U
 
 HRESULT STDMETHODCALLTYPE on_resize(IDXGISwapChain* swapchain, UINT count, UINT width, UINT height, DXGI_FORMAT format, UINT flags) noexcept {
     if (!original_resize) return E_FAIL;
+    reset_steam_screenshots(swapchain);
     try {
         Renderer::instance().reset(swapchain);
     } catch (...) {
@@ -101,6 +105,7 @@ void hook_swapchain(IDXGISwapChain* swapchain) noexcept {
     std::lock_guard lock(hook_mutex);
     bool present_hooked = patch_vtable<Present>(swapchain, 8, &on_present, original_present);
     bool resize_hooked = patch_vtable<Resize>(swapchain, 13, &on_resize, original_resize);
+    if (present_hooked) notify_steam_swapchain(swapchain);
     if (present_hooked && resize_hooked) log("Swapchain Present and ResizeBuffers hooked");
     hook_context(swapchain);
 }

@@ -47,9 +47,9 @@ void Renderer::poll_config() {
     load_lut();
 }
 
-void Renderer::present(IDXGISwapChain* swapchain) {
+FrameStatus Renderer::present(IDXGISwapChain* swapchain) {
     std::unique_lock lock(mutex_, std::try_to_lock);
-    if (!lock.owns_lock() || !swapchain) return;
+    if (!lock.owns_lock() || !swapchain) return FrameStatus::Skipped;
     if (active_swapchain_ != swapchain) {
         reset_unlocked();
         active_swapchain_ = swapchain;
@@ -58,7 +58,8 @@ void Renderer::present(IDXGISwapChain* swapchain) {
     if (initialized_) poll_config();
     poll_hotkey();
     DepthCapture::instance().set_active(captures_depth(initialized_, config_));
-    if (!initialized_ || !config_.enabled || config_.mode == TestMode::Hook) return;
+    if (!config_.enabled || config_.mode == TestMode::Hook) return FrameStatus::Original;
+    if (!initialized_) return FrameStatus::Failed;
     profiler_.poll(context_.Get());
     profiler_.begin(context_.Get());
     ContextState previous(context_.Get());
@@ -71,7 +72,7 @@ void Renderer::present(IDXGISwapChain* swapchain) {
     if (config_.mode == TestMode::Copy) {
         context_->CopyResource(resources_.backbuffer(), resources_.copy());
         profiler_.end(context_.Get());
-        return;
+        return FrameStatus::Processed;
     }
     if (config_.mode == TestMode::Photoreal || config_.mode == TestMode::Raytracing) {
         ID3D11ShaderResourceView* input = resources_.input();
@@ -90,6 +91,7 @@ void Renderer::present(IDXGISwapChain* swapchain) {
             resources_.input(), resources_.output());
     }
     profiler_.end(context_.Get());
+    return FrameStatus::Processed;
 }
 
 void Renderer::reset(IDXGISwapChain* swapchain) noexcept {

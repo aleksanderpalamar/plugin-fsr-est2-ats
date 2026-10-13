@@ -4,6 +4,7 @@
 #include "renderer/resource_manager.hpp"
 #include "renderer/gpu_profiler.hpp"
 #include "renderer/lut_resource.hpp"
+#include "renderer/frame_status.hpp"
 
 #include <d3d11.h>
 #include <dxgi.h>
@@ -16,7 +17,7 @@ namespace neuralfx {
 class Renderer {
 public:
     static Renderer& instance() noexcept;
-    void present(IDXGISwapChain* swapchain);
+    FrameStatus present(IDXGISwapChain* swapchain);
     void reset(IDXGISwapChain* swapchain) noexcept;
     void set_neural_residual(ID3D11ShaderResourceView* resource) noexcept;
 

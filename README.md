@@ -1,6 +1,6 @@
 # NeuralFX-ETS2
 
-Version 3.0.1 is a DXGI proxy for D3D11 post-processing in Euro Truck Simulator 2 and American Truck Simulator. It applies screen-space reflections and approximate indirect lighting to the game's SDR image using a captured depth buffer, followed by photorealistic grading, the included LUTs, and RCAS sharpening. The ray tracing mode was visually tested in ETS2 1.61.1.1 via Proton; ATS still needs an in-game test of this mode.
+Version 4.1.1 is a DXGI proxy for D3D11 post-processing in Euro Truck Simulator 2 and American Truck Simulator. It applies screen-space reflections and approximate indirect lighting to the game's SDR image using a captured depth buffer, followed by photorealistic grading, the included LUTs, and RCAS sharpening. The 4.1 minor series adds Steam screenshot integration. Version 4.1.0 failed in-game on both Windows and Proton because it skipped games with an existing screenshot handler. Version 4.1.1 intercepts the game's screenshot callback and captures the final processed frame. The user confirmed that F12 screenshots and ETS2 photo-mode captures retain the plugin effects in 4.1.1. ATS and the remaining platform checks still need verification.
 
 ## Building on Windows
 
@@ -13,7 +13,7 @@ ctest --test-dir build -C Release --output-on-failure
 cmake --build build --config Release --target neuralfx_package
 ```
 
-The expected output is `build/Release/dxgi.dll` alongside the `build/Release/NeuralFX` folder. By default, the installation package is written to `dist/FSR-ets2-ats-3.0.1.zip`, using `project(... VERSION ...)` in CMake. Shaders are compiled at runtime during initialization to make testing easier. The DLL uses x64 MASM to preserve the arguments of exports forwarded to Windows DXGI.
+The expected output is `build/Release/dxgi.dll` alongside the `build/Release/NeuralFX` folder. By default, the installation package is written to `dist/FSR-ets2-ats-4.1.1.zip`, using `project(... VERSION ...)` in CMake. Shaders are compiled at runtime during initialization to make testing easier. The DLL uses x64 MASM to preserve the arguments of exports forwarded to Windows DXGI.
 
 Before installing, validate the exports on the same Windows system with `powershell -ExecutionPolicy Bypass -File tools/check-exports.ps1 build/Release/dxgi.dll`. If the script fails, the DLL is not ready for that system.
 
@@ -67,6 +67,20 @@ The package includes `NeuralFX/luts/neuralfx-ets2.cube` and `NeuralFX/luts/neura
 
 In `photoreal` and `raytracing` modes, the backbuffer is copied before `Present`. Ray tracing adds a screen-space pass before color processing. The color pass writes sRGB to an `R16G16B16A16_FLOAT` intermediate target; the finishing pass applies RCAS, grain, and dither to the backbuffer. The `exposure_ev`, `contrast`, `saturation`, `clarity`, `highlight_boost`, `highlight_warmth`, `shadow_coolness`, `neural_strength`, `black_level`, `lut_strength`, `grain_strength`, `tone_strength`, `highlight_start`, `highlight_end`, and `photoreal_sharpness` parameters can be changed in the INI while the game is running; the plugin reloads them within one second. The initial `photoreal_sharpness` value is 0.30. `lut_path` points to a 3D `.cube` LUT with a 0-to-1 domain and a size from 2 to 64, relative to the `NeuralFX` folder. The LUT is optional and is applied only when `lut_strength` is greater than zero. The neural residual is optional and is applied only when a producer supplies an SRV to the renderer and `neural_strength` is greater than zero; this version does not include such a producer.
 
+## Steam screenshots
+
+The screenshot key remains configured and handled by Steam (F12 by default). NeuralFX intercepts the game's imported callback registration during DLL attachment. It relays the game's existing `ScreenshotRequested_t` handler to final-frame capture only after the renderer and Steam API are ready. When the game has no existing handler, NeuralFX registers its own and enables `HookScreenshots(true)`. Manual callback dispatch and existing handlers that could not be intercepted remain unsupported. The plugin uses the game's callback loop and does not call `SteamAPI_Init`, `SteamAPI_Shutdown`, or `SteamAPI_RunCallbacks` itself.
+
+Handlers registered after activation are also intercepted. NeuralFX delegates each request once and preserves the game's hook when that handler becomes available.
+
+A request waits for an eligible frame. NeuralFX reads the final backbuffer after all active passes, converts its RGBA/BGRA pixels to 24-bit RGB, and calls `WriteScreenshot` before forwarding `Present`. GPU readback occurs only for pending requests. With `enabled=false` or `mode=hook`, it submits the original game frame. If capture or submission fails, the integration restores the previous handler and logs the failure. The game's original hook state and callback unregistering remain intact. Steam writes the library entry asynchronously.
+
+After a failure, the consumed request and remaining queued requests are reissued through `TriggerScreenshot` after restoring the previous handler. The game's callback loop or Steam Overlay handles these requests. If the Steam API is unavailable, the inability to reissue them is logged explicitly.
+
+The supported screenshot path uses single-sample, 8-bit RGBA/BGRA UNORM or SRGB backbuffers. Successful interception, activation, submission, and completion are recorded in `NeuralFX/logs/neuralfx.log`. The integration test verifies one processed capture when a game already hooks screenshots; it uses a simulated Steam API and does not replace real Steam validation.
+
+The user confirmed that F12 screenshots and photo-mode captures in ETS2 retain the plugin effects in 4.1.1. The successful report did not specify Windows or Proton. Remaining manual checks include ATS, the platform matrix, one library entry per request, matching `ScreenshotReady success` logs, disabled effects, multiple requests, resolution changes, fullscreen/windowed changes, and Alt+Tab.
+
 ## Verified scope and limitations
 
 - The plugin reads the already composed backbuffer, so post-processing also affects the HUD. The code accepts only 8-bit RGBA/BGRA backbuffer formats. For `_SRGB` formats, the SRV decodes and the RTV encodes sRGB in hardware. For `_UNORM` formats, the shader assumes sRGB-encoded SDR values, decodes them for grading, and writes encoded values after RCAS. The actual ETS2 color space still needs validation through a frame capture.
@@ -74,7 +88,7 @@ In `photoreal` and `raytracing` modes, the backbuffer is copied before `Present`
 - Input and output resolutions are the same. EASU is disabled until a lower-resolution scene color target can be identified reliably and the HUD can be separated. This version does not provide FSR1 upscaling.
 - The plugin captures a depth target for screen-space ray tracing. There is no DirectML/ONNX, overlay, F9 capture, G-buffer detection, motion vectors, or temporal upscaling. Sharpening implements the core RCAS equations in HLSL, with numerical safeguards at the edges.
 - The hooks cover swapchains created by factories obtained through `CreateDXGIFactory`, `CreateDXGIFactory1`, and `CreateDXGIFactory2`. Swapchain creation and depth capture were observed in ETS2 1.61.1.1 via Proton.
-- The proxy forwards DXGI calls by name or by the original ordinal at runtime. It provides ordinal forwarding slots 1 through 40; the Windows DXGI observed during development uses slots 1 through 20. Run `tools/check-exports.ps1` against the target Windows installation before use. Systems with ordinals above 40 are unsupported. Native Windows testing of version 3.0.1 produced a startup crash that is under investigation.
+- The proxy forwards DXGI calls by name or by the original ordinal at runtime. It provides ordinal forwarding slots 1 through 40; the Windows DXGI observed during development uses slots 1 through 20. Run `tools/check-exports.ps1` against the target Windows installation before use. Systems with ordinals above 40 are unsupported. The startup fix in version 3.0.4 was validated in ETS2 on native Windows; the new screenshot feature has separate manual checks.
 
 ## Step-by-step validation in ETS2
 

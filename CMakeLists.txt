@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(NeuralFX_ETS2 VERSION 3.0.1 LANGUAGES CXX)
+project(NeuralFX_ETS2 VERSION 4.1.1 LANGUAGES CXX)
 
 add_library(neuralfx_config STATIC src/config/config_parser.cpp src/renderer/lut_data.cpp)
 target_compile_features(neuralfx_config PUBLIC cxx_std_20)
@@ -12,6 +12,8 @@ add_executable(neuralfx_capture_policy_tests tests/capture_policy_tests.cpp)
 target_compile_features(neuralfx_capture_policy_tests PRIVATE cxx_std_20)
 target_include_directories(neuralfx_capture_policy_tests PRIVATE src)
 add_test(NAME neuralfx_capture_policy_tests COMMAND neuralfx_capture_policy_tests)
+
+include(cmake/screenshot_tests.cmake)
 
 add_library(neuralfx_raytracing STATIC
     src/raytracing/geometry.cpp
@@ -58,6 +60,13 @@ add_library(dxgi SHARED
     src/dxgi/swapchain_hook.cpp
     src/dxgi/context_hook.cpp
     src/dxgi/depth_capture.cpp
+    src/screenshots/integration.cpp
+    src/screenshots/steam_loader.cpp
+    src/screenshots/steam_imports.cpp
+    src/screenshots/steam_interception.cpp
+    src/screenshots/screenshot_log.cpp
+    src/screenshots/swapchain_reader.cpp
+    src/screenshots/d3d11_readback.cpp
     src/renderer/renderer.cpp
     src/renderer/renderer_passes.cpp
     src/renderer/renderer_screen_space.cpp
@@ -78,8 +87,11 @@ else()
     target_compile_options(dxgi PRIVATE -Wall -Wextra)
 endif()
 target_include_directories(dxgi PRIVATE src)
-target_link_libraries(dxgi PRIVATE neuralfx_config d3d11 ${D3DCOMPILER_LIBRARY} dxguid user32 kernel32)
+target_link_libraries(dxgi PRIVATE neuralfx_config neuralfx_screenshots
+    d3d11 ${D3DCOMPILER_LIBRARY} dxguid user32 kernel32)
 set_target_properties(dxgi PROPERTIES OUTPUT_NAME dxgi PREFIX "")
+
+include(cmake/screenshot_host.cmake)
 
 add_executable(neuralfx_dxgi_smoke tests/dxgi_proxy_smoke.cpp)
 target_compile_features(neuralfx_dxgi_smoke PRIVATE cxx_std_20)

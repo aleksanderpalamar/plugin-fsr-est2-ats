@@ -134,7 +134,7 @@ class PackageCheckTests(TestCase):
                      root / "CMakeLists.txt")
             packages = root / "dist"
             packages.mkdir()
-            expected = packages / "FSR-ets2-ats-3.0.1.zip"
+            expected = packages / "FSR-ets2-ats-4.1.1.zip"
             expected.touch()
             previous = getcwd()
             try:

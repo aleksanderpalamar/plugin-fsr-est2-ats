@@ -14,7 +14,9 @@ target_link_libraries(neuralfx_steam_screenshot_host PRIVATE neuralfx_test_steam
 set_target_properties(neuralfx_steam_screenshot_host PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/screenshot-host)
 add_custom_target(neuralfx_screenshot_host_assets ALL
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:dxgi> $<TARGET_FILE_DIR:neuralfx_steam_screenshot_host>
+    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:neuralfx_steam_screenshot_host>
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:dxgi>
+        $<TARGET_FILE_DIR:neuralfx_steam_screenshot_host>/$<TARGET_FILE_NAME:dxgi>
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/shaders
         $<TARGET_FILE_DIR:neuralfx_steam_screenshot_host>/NeuralFX/shaders
     COMMAND ${CMAKE_COMMAND} -E make_directory

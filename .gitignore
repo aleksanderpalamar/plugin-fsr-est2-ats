@@ -4,6 +4,7 @@ dist/
 *.obj
 *.pdb
 *.ilk
+__pycache__/
 session.md
 tarefa_shader.md
 instruction.md

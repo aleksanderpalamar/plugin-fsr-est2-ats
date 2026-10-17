@@ -7,7 +7,8 @@ from zipfile import ZipFile
 
 
 ETS2_LUT_PATH = "NeuralFX/luts/neuralfx-ets2.cube"
-LUT_PATHS = {ETS2_LUT_PATH, "NeuralFX/luts/neuralfx-ats.cube"}
+LUT_PATHS = {ETS2_LUT_PATH, "NeuralFX/luts/neuralfx-ats.cube",
+             "NeuralFX/luts/neuralfx-ets2-profile-2.cube"}
 
 
 def normalized_text(content: bytes) -> str:

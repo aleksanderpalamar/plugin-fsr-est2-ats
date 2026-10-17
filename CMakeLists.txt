@@ -222,7 +222,8 @@ add_custom_target(neuralfx_package
     COMMAND ${CMAKE_COMMAND} -E tar cf
         ${CMAKE_CURRENT_SOURCE_DIR}/dist/${NEURALFX_PACKAGE_NAME}.zip --format=zip
         $<TARGET_FILE_NAME:dxgi> NeuralFX/neuralfx.ini NeuralFX/shaders
-        NeuralFX/luts/neuralfx-ets2.cube NeuralFX/luts/neuralfx-ats.cube README
+        NeuralFX/luts/neuralfx-ets2.cube NeuralFX/luts/neuralfx-ats.cube
+        NeuralFX/luts/neuralfx-ets2-profile-2.cube README
     COMMAND ${CMAKE_COMMAND} -E echo
         "Package generated: ${CMAKE_CURRENT_SOURCE_DIR}/dist/${NEURALFX_PACKAGE_NAME}.zip"
     WORKING_DIRECTORY $<TARGET_FILE_DIR:dxgi>

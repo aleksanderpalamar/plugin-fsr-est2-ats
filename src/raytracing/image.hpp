@@ -1,8 +1,7 @@
 #pragma once
 
-#include "raytracing/tracer.hpp"
+#include "raytracing/vec3.hpp"
 
-#include <optional>
 #include <ostream>
 #include <vector>
 
@@ -17,7 +16,5 @@ struct Image {
     }
 };
 
-std::optional<Image> render(const SceneQuery& scene, const Camera& camera,
-    int width, int height, const Settings& settings);
 bool write_ppm(std::ostream& output, const Image& image);
 }

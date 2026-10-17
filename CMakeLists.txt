@@ -25,20 +25,23 @@ include(cmake/screenshot_tests.cmake)
 add_library(neuralfx_raytracing STATIC
     src/raytracing/geometry.cpp
     src/raytracing/bvh_build.cpp
-    src/raytracing/bvh_query.cpp
     src/raytracing/scene.cpp
     src/raytracing/camera.cpp
-    src/raytracing/tracer.cpp
     src/raytracing/image.cpp
+    src/raytracing/gpu_scene.cpp
+    src/raytracing/gpu_constants.cpp
 )
 target_compile_features(neuralfx_raytracing PUBLIC cxx_std_20)
 target_include_directories(neuralfx_raytracing PUBLIC src)
 add_executable(neuralfx_raytracing_geometry_tests tests/raytracing_geometry_tests.cpp)
 target_link_libraries(neuralfx_raytracing_geometry_tests PRIVATE neuralfx_raytracing)
 add_test(NAME neuralfx_raytracing_geometry_tests COMMAND neuralfx_raytracing_geometry_tests)
-add_executable(neuralfx_raytracing_render_tests tests/raytracing_render_tests.cpp)
-target_link_libraries(neuralfx_raytracing_render_tests PRIVATE neuralfx_raytracing)
-add_test(NAME neuralfx_raytracing_render_tests COMMAND neuralfx_raytracing_render_tests)
+add_executable(neuralfx_raytracing_scene_tests tests/raytracing_scene_tests.cpp)
+target_link_libraries(neuralfx_raytracing_scene_tests PRIVATE neuralfx_raytracing)
+add_test(NAME neuralfx_raytracing_scene_tests COMMAND neuralfx_raytracing_scene_tests)
+add_executable(neuralfx_raytracing_gpu_data_tests tests/raytracing_gpu_data_tests.cpp)
+target_link_libraries(neuralfx_raytracing_gpu_data_tests PRIVATE neuralfx_raytracing)
+add_test(NAME neuralfx_raytracing_gpu_data_tests COMMAND neuralfx_raytracing_gpu_data_tests)
 if(NOT WIN32)
     return()
 endif()
@@ -170,6 +173,24 @@ target_include_directories(neuralfx_screen_space_pass_tests PRIVATE src)
 target_link_libraries(neuralfx_screen_space_pass_tests PRIVATE d3d11 ${D3DCOMPILER_LIBRARY})
 add_test(NAME neuralfx_screen_space_pass_tests COMMAND neuralfx_screen_space_pass_tests)
 
+add_library(neuralfx_raytracing_gpu STATIC
+    src/raytracing/gpu_tracer.cpp
+    src/raytracing/gpu_scene_buffers.cpp
+    src/raytracing/gpu_readback.cpp
+)
+target_compile_features(neuralfx_raytracing_gpu PUBLIC cxx_std_20)
+target_compile_definitions(neuralfx_raytracing_gpu PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_link_libraries(neuralfx_raytracing_gpu PUBLIC neuralfx_raytracing d3d11 ${D3DCOMPILER_LIBRARY})
+
+add_executable(neuralfx_raytracing_gpu_tests
+    tests/raytracing_gpu_tests.cpp
+    src/gpu/shader_compiler.cpp
+    src/common/logger.cpp
+)
+target_compile_definitions(neuralfx_raytracing_gpu_tests PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_link_libraries(neuralfx_raytracing_gpu_tests PRIVATE neuralfx_raytracing_gpu)
+add_test(NAME neuralfx_raytracing_gpu_tests COMMAND neuralfx_raytracing_gpu_tests)
+
 add_custom_target(neuralfx_runtime_assets ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:dxgi>/NeuralFX/shaders
@@ -181,6 +202,7 @@ add_custom_target(neuralfx_runtime_assets ALL
 )
 add_dependencies(neuralfx_shader_compile_tests neuralfx_runtime_assets)
 add_dependencies(neuralfx_screen_space_pass_tests neuralfx_runtime_assets)
+add_dependencies(neuralfx_raytracing_gpu_tests neuralfx_runtime_assets)
 
 set(NEURALFX_PACKAGE_VERSION "$ENV{NEURALFX_PACKAGE_VERSION}")
 if(NEURALFX_PACKAGE_VERSION STREQUAL "")

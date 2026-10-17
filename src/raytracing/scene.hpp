@@ -27,27 +27,15 @@ private:
     Vec3 to_light_;
 };
 
-class SceneQuery {
-public:
-    virtual ~SceneQuery() = default;
-    virtual std::optional<Hit> intersect(const Ray& ray, double minimum,
-        double maximum) const noexcept = 0;
-    virtual bool occluded(const Ray& ray, double minimum, double maximum) const noexcept = 0;
-    virtual const Material* material(size_t index) const noexcept = 0;
-    virtual std::span<const DirectionalLight> lights() const noexcept = 0;
-};
-
-class Scene final : public SceneQuery {
+class Scene {
 public:
     Scene(std::vector<Triangle> triangles, std::vector<Material> materials,
         std::vector<DirectionalLight> lights);
     void rebuild(std::vector<Triangle> triangles);
-    std::optional<Hit> intersect(const Ray& ray, double minimum,
-        double maximum) const noexcept override;
-    bool occluded(const Ray& ray, double minimum, double maximum) const noexcept override;
-    const Material* material(size_t index) const noexcept override;
-    std::span<const DirectionalLight> lights() const noexcept override;
     size_t bvh_node_count() const noexcept { return geometry_.node_count(); }
+    const Bvh& geometry() const noexcept { return geometry_; }
+    std::span<const Material> materials() const noexcept { return materials_; }
+    std::span<const DirectionalLight> lights() const noexcept { return lights_; }
 
 private:
     Bvh geometry_;

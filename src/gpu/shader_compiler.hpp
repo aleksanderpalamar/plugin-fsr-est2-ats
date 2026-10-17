@@ -9,4 +9,6 @@ HRESULT create_vertex_shader(ID3D11Device* device, const std::filesystem::path& 
     const char* entry, Microsoft::WRL::ComPtr<ID3D11VertexShader>& shader);
 HRESULT create_pixel_shader(ID3D11Device* device, const std::filesystem::path& path,
     const char* entry, Microsoft::WRL::ComPtr<ID3D11PixelShader>& shader);
+HRESULT create_compute_shader(ID3D11Device* device, const std::filesystem::path& path,
+    const char* entry, Microsoft::WRL::ComPtr<ID3D11ComputeShader>& shader);
 }

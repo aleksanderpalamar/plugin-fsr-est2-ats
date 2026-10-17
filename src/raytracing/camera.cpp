@@ -19,11 +19,10 @@ std::optional<Camera> Camera::look_at(Vec3 position, Vec3 target,
     return Camera(position, forward, right, cross(right, forward), vertical_fov_degrees);
 }
 
-Ray Camera::ray_for_pixel(int x, int y, int width, int height) const noexcept {
-    double aspect = static_cast<double>(width) / height;
+std::optional<CameraFrame> Camera::frame(int width, int height) const noexcept {
+    if (width <= 0 || height <= 0) return std::nullopt;
     double scale = std::tan(field_of_view_ * std::numbers::pi / 360.0);
-    double horizontal = (2.0 * (x + 0.5) / width - 1.0) * aspect * scale;
-    double vertical = (1.0 - 2.0 * (y + 0.5) / height) * scale;
-    return {position_, normalized(forward_ + right_ * horizontal + up_ * vertical)};
+    double aspect = static_cast<double>(width) / height;
+    return CameraFrame{position_, forward_, right_ * (aspect * scale), up_ * scale};
 }
 }

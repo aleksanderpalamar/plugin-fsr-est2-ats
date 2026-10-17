@@ -32,4 +32,12 @@ HRESULT create_pixel_shader(ID3D11Device* device, const std::filesystem::path& p
     if (FAILED(result)) return result;
     return device->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, &shader);
 }
+
+HRESULT create_compute_shader(ID3D11Device* device, const std::filesystem::path& path,
+    const char* entry, Microsoft::WRL::ComPtr<ID3D11ComputeShader>& shader) {
+    Microsoft::WRL::ComPtr<ID3DBlob> blob;
+    HRESULT result = compile(path, entry, "cs_5_0", &blob);
+    if (FAILED(result)) return result;
+    return device->CreateComputeShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, &shader);
+}
 }

@@ -52,6 +52,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> context_;
     Microsoft::WRL::ComPtr<ID3D11VertexShader> vertex_;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> copy_pixel_;
+    Microsoft::WRL::ComPtr<ID3D11PixelShader> srgb_copy_pixel_;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> rcas_pixel_;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> photoreal_pixel_;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> finish_pixel_;

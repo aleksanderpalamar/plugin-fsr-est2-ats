@@ -65,7 +65,10 @@ float RefineHit(ScreenRay ray, float before, float after) {
     for (uint index = 0; index < refinement_steps; ++index) {
         float middle = 0.5 * (before + after);
         float device_depth = DeviceDepthAt(UvPixel(RayUv(ray, middle)));
-        bool crossed = !IsBackground(device_depth) && LinearDepth(device_depth) <= RayDepth(ray, middle);
+        float surface_depth = LinearDepth(device_depth);
+        float ray_depth = RayDepth(ray, middle);
+        bool crossed = !IsBackground(device_depth) && (ray.delta_inverse_depth > 0.0
+            ? surface_depth >= ray_depth : surface_depth <= ray_depth);
         before = crossed ? before : middle;
         after = crossed ? middle : after;
     }

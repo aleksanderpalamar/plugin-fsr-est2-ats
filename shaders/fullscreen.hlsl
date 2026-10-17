@@ -1,3 +1,5 @@
+#include "color_space.hlsl"
+
 Texture2D source_texture : register(t0);
 
 cbuffer Parameters : register(b0) {
@@ -23,6 +25,11 @@ float4 CopyMain(VertexOutput input) : SV_Target {
     source_texture.GetDimensions(width, height);
     int2 position = clamp(int2(input.position.xy), int2(0, 0), int2(width - 1, height - 1));
     return source_texture.Load(int3(position, 0));
+}
+
+float4 SrgbCopyMain(VertexOutput input) : SV_Target {
+    float4 color = CopyMain(input);
+    return float4(LinearToSrgb(color.rgb), color.a);
 }
 
 #include "rcas.hlsl"

@@ -12,6 +12,8 @@ HRESULT Renderer::compile_shaders() {
     if (FAILED(result)) return result;
     result = create_pixel_shader(device_.Get(), fullscreen, "CopyMain", copy_pixel_);
     if (FAILED(result)) return result;
+    result = create_pixel_shader(device_.Get(), fullscreen, "SrgbCopyMain", srgb_copy_pixel_);
+    if (FAILED(result)) return result;
     result = create_pixel_shader(device_.Get(), fullscreen, "RcasMain", rcas_pixel_);
     if (FAILED(result)) return result;
     if (config_.mode != TestMode::Photoreal && config_.mode != TestMode::Raytracing) return S_OK;

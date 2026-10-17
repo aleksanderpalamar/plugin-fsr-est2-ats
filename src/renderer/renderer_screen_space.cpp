@@ -10,7 +10,8 @@ void Renderer::render_processed() {
         return;
     }
     if (config_.raytracing.debug_view != TraceDebugView::Off) {
-        draw(copy_pixel_.Get(), resources_.traced_input(), resources_.output());
+        auto* pixel = resources_.needs_srgb_conversion() ? srgb_copy_pixel_.Get() : copy_pixel_.Get();
+        draw(pixel, resources_.traced_input(), resources_.output());
         return;
     }
     render_photoreal(resources_.traced_input(), ColorEncoding::Linear);

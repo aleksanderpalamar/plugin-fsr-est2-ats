@@ -173,6 +173,8 @@ target_include_directories(neuralfx_screen_space_pass_tests PRIVATE src)
 target_link_libraries(neuralfx_screen_space_pass_tests PRIVATE d3d11 ${D3DCOMPILER_LIBRARY})
 add_test(NAME neuralfx_screen_space_pass_tests COMMAND neuralfx_screen_space_pass_tests)
 
+include(cmake/raytracing_review_tests.cmake)
+
 add_library(neuralfx_raytracing_gpu STATIC
     src/raytracing/gpu_tracer.cpp
     src/raytracing/gpu_scene_buffers.cpp

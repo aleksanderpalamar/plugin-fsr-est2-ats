@@ -99,6 +99,7 @@ void Renderer::reset_unlocked() noexcept {
     finish_pixel_.Reset();
     photoreal_pixel_.Reset();
     rcas_pixel_.Reset();
+    srgb_copy_pixel_.Reset();
     copy_pixel_.Reset();
     vertex_.Reset();
     screen_space_.reset();

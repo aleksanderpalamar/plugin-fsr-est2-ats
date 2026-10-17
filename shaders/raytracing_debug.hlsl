@@ -11,5 +11,5 @@ float3 DebugColor(int2 pixel, float view_depth, bool skipped) {
     if (debug_view == debug_normals) return normal * 0.5 + 0.5;
     if (debug_view == debug_occlusion) return 1.0 - SampleOcclusion(pixel, position, normal).amount;
     Reflection reflection = TraceReflection(pixel, position, normal);
-    return LinearToSrgb(reflection.color * reflection.weight);
+    return reflection.color * reflection.weight;
 }

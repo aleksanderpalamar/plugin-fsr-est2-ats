@@ -2,7 +2,22 @@
 #include "renderer/depth_format.hpp"
 #include "common/logger.hpp"
 
+#include <algorithm>
+#include <array>
+#include <charconv>
+#include <string_view>
+
 namespace neuralfx {
+namespace {
+void log_copies(unsigned copies) noexcept {
+    constexpr std::string_view prefix = "Screen-space depth copies per frame: ";
+    std::array<char, 64> line{};
+    std::copy(prefix.begin(), prefix.end(), line.begin());
+    auto result = std::to_chars(line.data() + prefix.size(), line.data() + line.size(), copies);
+    log(std::string_view(line.data(), static_cast<size_t>(result.ptr - line.data())));
+}
+}
+
 DepthCapture& DepthCapture::instance() noexcept {
     static DepthCapture capture;
     return capture;
@@ -18,6 +33,8 @@ void DepthCapture::configure(ID3D11Device* device, UINT width, UINT height) noex
     height_ = height;
     format_ = DXGI_FORMAT_UNKNOWN;
     ready_ = false;
+    copies_ = 0;
+    copies_per_frame_ = 0;
 }
 
 void DepthCapture::reset() noexcept {
@@ -77,12 +94,25 @@ void DepthCapture::capture(ID3D11DeviceContext* context, ID3D11DepthStencilView*
     if (!prepare(description, formats->texture, formats->view)) return;
     context->CopyResource(copy_.Get(), texture.Get());
     ready_ = true;
+    ++copies_;
 }
 
 Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> DepthCapture::take_view() noexcept {
-    std::lock_guard lock(mutex_);
+    std::unique_lock lock(mutex_);
     if (!ready_) return nullptr;
     ready_ = false;
-    return view_;
+    bool changed = copies_ != copies_per_frame_;
+    copies_per_frame_ = copies_;
+    copies_ = 0;
+    auto view = view_;
+    unsigned copies = copies_per_frame_;
+    lock.unlock();
+    if (changed) log_copies(copies);
+    return view;
+}
+
+unsigned DepthCapture::copies_per_frame() noexcept {
+    std::lock_guard lock(mutex_);
+    return copies_per_frame_;
 }
 }

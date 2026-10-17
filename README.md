@@ -65,7 +65,27 @@ The package includes `NeuralFX/luts/neuralfx-ets2.cube` and `NeuralFX/luts/neura
 
 `mode=hook` tests forwarding only; `copy` performs a GPU copy round trip; `fullscreen` runs the copy pass; `rcas` applies sharpening; and `photoreal` runs grading, RCAS, and finishing. `mode=raytracing` adds screen-space reflections and approximate indirect lighting from the game's color and depth buffers before the photoreal, LUT, and RCAS passes. It can only use geometry visible in the depth buffer; if the buffer is unavailable, it falls back to the photoreal pipeline. `sharpness` accepts values from 0 to 1 in `rcas` mode; `photoreal_sharpness` controls RCAS in `photoreal` and `raytracing` modes. Changing `mode` requires restarting the game.
 
-In `photoreal` and `raytracing` modes, the backbuffer is copied before `Present`. Ray tracing adds a screen-space pass before color processing. The color pass writes sRGB to an `R16G16B16A16_FLOAT` intermediate target; the finishing pass applies RCAS, grain, and dither to the backbuffer. The `exposure_ev`, `contrast`, `saturation`, `clarity`, `highlight_boost`, `highlight_warmth`, `shadow_coolness`, `neural_strength`, `black_level`, `lut_strength`, `grain_strength`, `tone_strength`, `highlight_start`, `highlight_end`, and `photoreal_sharpness` parameters can be changed in the INI while the game is running; the plugin reloads them within one second. The initial `photoreal_sharpness` value is 0.30. `lut_path` points to a 3D `.cube` LUT with a 0-to-1 domain and a size from 2 to 64, relative to the `NeuralFX` folder. The LUT is optional and is applied only when `lut_strength` is greater than zero. The neural residual is optional and is applied only when a producer supplies an SRV to the renderer and `neural_strength` is greater than zero; this version does not include such a producer.
+In `photoreal` and `raytracing` modes, the backbuffer is copied before `Present`. Ray tracing adds a screen-space pass before color processing. The color pass writes sRGB to an `R16G16B16A16_FLOAT` intermediate target; the finishing pass applies RCAS, grain, and dither to the backbuffer. The `exposure_ev`, `contrast`, `saturation`, `clarity`, `highlight_boost`, `highlight_warmth`, `shadow_coolness`, `neural_strength`, `black_level`, `lut_strength`, `grain_strength`, `tone_strength`, `highlight_start`, `highlight_end`, and `photoreal_sharpness` parameters, and every `rt_*` key, can be changed in the INI while the game is running; the plugin reloads them within one second. The initial `photoreal_sharpness` value is 0.30. `lut_path` points to a 3D `.cube` LUT with a 0-to-1 domain and a size from 2 to 64, relative to the `NeuralFX` folder. The LUT is optional and is applied only when `lut_strength` is greater than zero. The neural residual is optional and is applied only when a producer supplies an SRV to the renderer and `neural_strength` is greater than zero; this version does not include such a producer.
+
+## Screen-space ray tracing
+
+The `raytracing` pass converts the captured depth to view-space distance, reconstructs positions and normals from neighboring pixels, and works in linear color. Reflections march a 3D ray projected onto the screen, refine the hit, and weight it with Schlick Fresnel; they apply only to upward-facing surfaces, fade near the screen border, and reflect sky pixels that an upward ray reaches. Ambient occlusion and one bounce of indirect light come from visible geometry within `rt_occlusion_radius`. Sampling uses per-pixel noise that stays fixed between frames, so the pattern does not flicker. The pass writes linear color to the `R16G16B16A16_FLOAT` intermediate target, and the photoreal pass reads it without decoding again.
+
+| Key | Default | Range | Meaning |
+| --- | --- | --- | --- |
+| `rt_reflection_strength` | 0.30 | 0–1 | Reflection blend after Fresnel and masks |
+| `rt_occlusion_strength` | 0.30 | 0–1 | Ambient occlusion darkening |
+| `rt_bounce_strength` | 0.25 | 0–1 | Indirect light from nearby occluders |
+| `rt_occlusion_radius` | 1.5 | 0.1–10 | Occlusion search radius in meters |
+| `rt_thickness` | 0.5 | 0.01–10 | Assumed surface thickness for reflection hits, in meters |
+| `rt_max_distance` | 250 | 1–10000 | Distance in meters beyond which pixels are left unchanged; also the reflection ray length |
+| `rt_near_plane` | 0.1 | 0.001–10 | Game camera near plane |
+| `rt_far_plane` | 5000 | 1–1000000, at least twice the near plane | Game camera far plane |
+| `rt_vertical_fov` | 55 | 10–150 | Game vertical field of view in degrees |
+| `rt_depth` | `standard` | `standard`, `reversed` | Depth convention; `reversed` treats 0 as far |
+| `rt_debug` | `off` | `off`, `depth`, `normals`, `occlusion`, `reflection` | Shows one stage directly on screen, bypassing grading |
+
+The projection defaults (`rt_near_plane`, `rt_far_plane`, `rt_vertical_fov`, `rt_depth`) are estimates that have not been validated in ETS2 or ATS. Calibrate them in game: with `rt_debug=depth`, distance should form a smooth gradient from black near the camera to white at `rt_max_distance`; with `rt_debug=normals`, flat ground should look light green and surfaces facing the camera olive. A wrong `rt_depth` makes the sky dark in the depth view. The log records `Screen-space depth copies per frame: N` whenever the count changes; values above 1 mean the game unbinds several full-resolution depth targets per frame, and the pass uses the last one.
 
 ## Steam screenshots
 

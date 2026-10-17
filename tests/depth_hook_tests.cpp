@@ -76,6 +76,13 @@ int main() {
     context->OMSetRenderTargetsAndUnorderedAccessViews(0, nullptr, nullptr,
         0, 0, nullptr, nullptr);
     if (!neuralfx::DepthCapture::instance().take_view()) return 4;
+    if (neuralfx::DepthCapture::instance().copies_per_frame() != 1) return 8;
+    context->OMSetRenderTargets(0, nullptr, depth.Get());
+    context->OMSetRenderTargets(0, nullptr, nullptr);
+    context->OMSetRenderTargets(0, nullptr, depth.Get());
+    context->OMSetRenderTargets(0, nullptr, nullptr);
+    if (!neuralfx::DepthCapture::instance().take_view()) return 9;
+    if (neuralfx::DepthCapture::instance().copies_per_frame() != 2) return 10;
     context->OMSetRenderTargets(0, nullptr, depth.Get());
     context->OMSetRenderTargetsAndUnorderedAccessViews(
         D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL, nullptr, nullptr,

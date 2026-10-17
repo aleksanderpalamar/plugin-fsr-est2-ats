@@ -1,13 +1,20 @@
 cmake_minimum_required(VERSION 3.24)
 project(NeuralFX_ETS2 VERSION 4.1.1 LANGUAGES CXX)
 
-add_library(neuralfx_config STATIC src/config/config_parser.cpp src/renderer/lut_data.cpp)
+add_library(neuralfx_config STATIC src/config/config_parser.cpp src/config/live_settings.cpp
+    src/renderer/lut_data.cpp)
 target_compile_features(neuralfx_config PUBLIC cxx_std_20)
 target_include_directories(neuralfx_config PUBLIC src)
 enable_testing()
 add_executable(neuralfx_config_tests tests/config_tests.cpp)
 target_link_libraries(neuralfx_config_tests PRIVATE neuralfx_config)
 add_test(NAME neuralfx_config_tests COMMAND neuralfx_config_tests)
+add_executable(neuralfx_raytracing_config_tests tests/raytracing_config_tests.cpp)
+target_link_libraries(neuralfx_raytracing_config_tests PRIVATE neuralfx_config)
+add_test(NAME neuralfx_raytracing_config_tests COMMAND neuralfx_raytracing_config_tests)
+add_executable(neuralfx_screen_space_constants_tests tests/screen_space_constants_tests.cpp)
+target_link_libraries(neuralfx_screen_space_constants_tests PRIVATE neuralfx_config)
+add_test(NAME neuralfx_screen_space_constants_tests COMMAND neuralfx_screen_space_constants_tests)
 add_executable(neuralfx_capture_policy_tests tests/capture_policy_tests.cpp)
 target_compile_features(neuralfx_capture_policy_tests PRIVATE cxx_std_20)
 target_include_directories(neuralfx_capture_policy_tests PRIVATE src)
@@ -70,6 +77,9 @@ add_library(dxgi SHARED
     src/renderer/renderer.cpp
     src/renderer/renderer_passes.cpp
     src/renderer/renderer_screen_space.cpp
+    src/renderer/screen_space_pass.cpp
+    src/renderer/fullscreen_draw.cpp
+    src/gpu/shader_compiler.cpp
     src/renderer/resource_manager.cpp
     src/renderer/depth_format.cpp
     src/renderer/lut_resource.cpp
@@ -147,6 +157,19 @@ set_target_properties(neuralfx_depth_hook_tests PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests)
 add_test(NAME neuralfx_depth_hook_tests COMMAND neuralfx_depth_hook_tests)
 
+add_executable(neuralfx_screen_space_pass_tests
+    tests/screen_space_pass_tests.cpp
+    src/renderer/screen_space_pass.cpp
+    src/renderer/fullscreen_draw.cpp
+    src/gpu/shader_compiler.cpp
+    src/common/logger.cpp
+)
+target_compile_features(neuralfx_screen_space_pass_tests PRIVATE cxx_std_20)
+target_compile_definitions(neuralfx_screen_space_pass_tests PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_include_directories(neuralfx_screen_space_pass_tests PRIVATE src)
+target_link_libraries(neuralfx_screen_space_pass_tests PRIVATE d3d11 ${D3DCOMPILER_LIBRARY})
+add_test(NAME neuralfx_screen_space_pass_tests COMMAND neuralfx_screen_space_pass_tests)
+
 add_custom_target(neuralfx_runtime_assets ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:dxgi>/NeuralFX/shaders
@@ -157,6 +180,7 @@ add_custom_target(neuralfx_runtime_assets ALL
     DEPENDS dxgi
 )
 add_dependencies(neuralfx_shader_compile_tests neuralfx_runtime_assets)
+add_dependencies(neuralfx_screen_space_pass_tests neuralfx_runtime_assets)
 
 set(NEURALFX_PACKAGE_VERSION "$ENV{NEURALFX_PACKAGE_VERSION}")
 if(NEURALFX_PACKAGE_VERSION STREQUAL "")

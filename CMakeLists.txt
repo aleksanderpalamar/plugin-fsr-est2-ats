@@ -1,13 +1,20 @@
 cmake_minimum_required(VERSION 3.24)
 project(NeuralFX_ETS2 VERSION 4.1.1 LANGUAGES CXX)
 
-add_library(neuralfx_config STATIC src/config/config_parser.cpp src/renderer/lut_data.cpp)
+add_library(neuralfx_config STATIC src/config/config_parser.cpp src/config/live_settings.cpp
+    src/renderer/lut_data.cpp)
 target_compile_features(neuralfx_config PUBLIC cxx_std_20)
 target_include_directories(neuralfx_config PUBLIC src)
 enable_testing()
 add_executable(neuralfx_config_tests tests/config_tests.cpp)
 target_link_libraries(neuralfx_config_tests PRIVATE neuralfx_config)
 add_test(NAME neuralfx_config_tests COMMAND neuralfx_config_tests)
+add_executable(neuralfx_raytracing_config_tests tests/raytracing_config_tests.cpp)
+target_link_libraries(neuralfx_raytracing_config_tests PRIVATE neuralfx_config)
+add_test(NAME neuralfx_raytracing_config_tests COMMAND neuralfx_raytracing_config_tests)
+add_executable(neuralfx_screen_space_constants_tests tests/screen_space_constants_tests.cpp)
+target_link_libraries(neuralfx_screen_space_constants_tests PRIVATE neuralfx_config)
+add_test(NAME neuralfx_screen_space_constants_tests COMMAND neuralfx_screen_space_constants_tests)
 add_executable(neuralfx_capture_policy_tests tests/capture_policy_tests.cpp)
 target_compile_features(neuralfx_capture_policy_tests PRIVATE cxx_std_20)
 target_include_directories(neuralfx_capture_policy_tests PRIVATE src)
@@ -18,20 +25,23 @@ include(cmake/screenshot_tests.cmake)
 add_library(neuralfx_raytracing STATIC
     src/raytracing/geometry.cpp
     src/raytracing/bvh_build.cpp
-    src/raytracing/bvh_query.cpp
     src/raytracing/scene.cpp
     src/raytracing/camera.cpp
-    src/raytracing/tracer.cpp
     src/raytracing/image.cpp
+    src/raytracing/gpu_scene.cpp
+    src/raytracing/gpu_constants.cpp
 )
 target_compile_features(neuralfx_raytracing PUBLIC cxx_std_20)
 target_include_directories(neuralfx_raytracing PUBLIC src)
 add_executable(neuralfx_raytracing_geometry_tests tests/raytracing_geometry_tests.cpp)
 target_link_libraries(neuralfx_raytracing_geometry_tests PRIVATE neuralfx_raytracing)
 add_test(NAME neuralfx_raytracing_geometry_tests COMMAND neuralfx_raytracing_geometry_tests)
-add_executable(neuralfx_raytracing_render_tests tests/raytracing_render_tests.cpp)
-target_link_libraries(neuralfx_raytracing_render_tests PRIVATE neuralfx_raytracing)
-add_test(NAME neuralfx_raytracing_render_tests COMMAND neuralfx_raytracing_render_tests)
+add_executable(neuralfx_raytracing_scene_tests tests/raytracing_scene_tests.cpp)
+target_link_libraries(neuralfx_raytracing_scene_tests PRIVATE neuralfx_raytracing)
+add_test(NAME neuralfx_raytracing_scene_tests COMMAND neuralfx_raytracing_scene_tests)
+add_executable(neuralfx_raytracing_gpu_data_tests tests/raytracing_gpu_data_tests.cpp)
+target_link_libraries(neuralfx_raytracing_gpu_data_tests PRIVATE neuralfx_raytracing)
+add_test(NAME neuralfx_raytracing_gpu_data_tests COMMAND neuralfx_raytracing_gpu_data_tests)
 if(NOT WIN32)
     return()
 endif()
@@ -70,6 +80,9 @@ add_library(dxgi SHARED
     src/renderer/renderer.cpp
     src/renderer/renderer_passes.cpp
     src/renderer/renderer_screen_space.cpp
+    src/renderer/screen_space_pass.cpp
+    src/renderer/fullscreen_draw.cpp
+    src/gpu/shader_compiler.cpp
     src/renderer/resource_manager.cpp
     src/renderer/depth_format.cpp
     src/renderer/lut_resource.cpp
@@ -147,6 +160,39 @@ set_target_properties(neuralfx_depth_hook_tests PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests)
 add_test(NAME neuralfx_depth_hook_tests COMMAND neuralfx_depth_hook_tests)
 
+add_executable(neuralfx_screen_space_pass_tests
+    tests/screen_space_pass_tests.cpp
+    src/renderer/screen_space_pass.cpp
+    src/renderer/fullscreen_draw.cpp
+    src/gpu/shader_compiler.cpp
+    src/common/logger.cpp
+)
+target_compile_features(neuralfx_screen_space_pass_tests PRIVATE cxx_std_20)
+target_compile_definitions(neuralfx_screen_space_pass_tests PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_include_directories(neuralfx_screen_space_pass_tests PRIVATE src)
+target_link_libraries(neuralfx_screen_space_pass_tests PRIVATE d3d11 ${D3DCOMPILER_LIBRARY})
+add_test(NAME neuralfx_screen_space_pass_tests COMMAND neuralfx_screen_space_pass_tests)
+
+include(cmake/raytracing_review_tests.cmake)
+
+add_library(neuralfx_raytracing_gpu STATIC
+    src/raytracing/gpu_tracer.cpp
+    src/raytracing/gpu_scene_buffers.cpp
+    src/raytracing/gpu_readback.cpp
+)
+target_compile_features(neuralfx_raytracing_gpu PUBLIC cxx_std_20)
+target_compile_definitions(neuralfx_raytracing_gpu PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_link_libraries(neuralfx_raytracing_gpu PUBLIC neuralfx_raytracing d3d11 ${D3DCOMPILER_LIBRARY})
+
+add_executable(neuralfx_raytracing_gpu_tests
+    tests/raytracing_gpu_tests.cpp
+    src/gpu/shader_compiler.cpp
+    src/common/logger.cpp
+)
+target_compile_definitions(neuralfx_raytracing_gpu_tests PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_link_libraries(neuralfx_raytracing_gpu_tests PRIVATE neuralfx_raytracing_gpu)
+add_test(NAME neuralfx_raytracing_gpu_tests COMMAND neuralfx_raytracing_gpu_tests)
+
 add_custom_target(neuralfx_runtime_assets ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:dxgi>/NeuralFX/shaders
@@ -157,6 +203,8 @@ add_custom_target(neuralfx_runtime_assets ALL
     DEPENDS dxgi
 )
 add_dependencies(neuralfx_shader_compile_tests neuralfx_runtime_assets)
+add_dependencies(neuralfx_screen_space_pass_tests neuralfx_runtime_assets)
+add_dependencies(neuralfx_raytracing_gpu_tests neuralfx_runtime_assets)
 
 set(NEURALFX_PACKAGE_VERSION "$ENV{NEURALFX_PACKAGE_VERSION}")
 if(NEURALFX_PACKAGE_VERSION STREQUAL "")
@@ -176,7 +224,8 @@ add_custom_target(neuralfx_package
     COMMAND ${CMAKE_COMMAND} -E tar cf
         ${CMAKE_CURRENT_SOURCE_DIR}/dist/${NEURALFX_PACKAGE_NAME}.zip --format=zip
         $<TARGET_FILE_NAME:dxgi> NeuralFX/neuralfx.ini NeuralFX/shaders
-        NeuralFX/luts/neuralfx-ets2.cube NeuralFX/luts/neuralfx-ats.cube README
+        NeuralFX/luts/neuralfx-ets2.cube NeuralFX/luts/neuralfx-ats.cube
+        NeuralFX/luts/neuralfx-ets2-profile-2.cube README
     COMMAND ${CMAKE_COMMAND} -E echo
         "Package generated: ${CMAKE_CURRENT_SOURCE_DIR}/dist/${NEURALFX_PACKAGE_NAME}.zip"
     WORKING_DIRECTORY $<TARGET_FILE_DIR:dxgi>

@@ -7,8 +7,9 @@ Português
 3. Ajuste NeuralFX/neuralfx.ini conforme desejar.
 4. Consulte NeuralFX/logs/neuralfx.log para confirmar o carregamento.
 
-O pacote inclui LUTs para ETS2 e ATS. Para usar a LUT do ATS, defina lut_path=luts/neuralfx-ats.cube no INI.
+O pacote inclui LUTs para ETS2 e ATS, além de um segundo perfil para ETS2. Para usar o segundo perfil do ETS2, defina lut_path=luts/neuralfx-ets2-profile-2.cube no INI; para usar a LUT do ATS, defina lut_path=luts/neuralfx-ats.cube.
 O modo raytracing usa a imagem e a profundidade do jogo para reflexos e iluminação aproximados em espaço de tela. Ele não inclui objetos fora da tela. A LUT e o RCAS continuam ativos.
+As chaves rt_* do INI ajustam intensidade, alcance e projeção do raytracing e são recarregadas em até um segundo. Para calibrar rt_near_plane, rt_far_plane, rt_vertical_fov e rt_depth, use rt_debug=depth até a profundidade formar um gradiente suave e rt_debug=normals até o chão aparecer verde-claro; depois volte para rt_debug=off.
 Com Steam Overlay ativo, use a tecla de captura configurada na Steam (F12 por padrão). Quando a integração estiver disponível, a captura enviada à biblioteca inclui os efeitos ativos. O usuário confirmou capturas com os efeitos pelo F12 e no modo foto do ETS2 na versão 4.1.1. A validação no ATS ainda está pendente.
 
 English
@@ -18,6 +19,7 @@ English
 3. Adjust NeuralFX/neuralfx.ini as desired.
 4. Check NeuralFX/logs/neuralfx.log to confirm that the plugin loaded.
 
-The package includes LUTs for ETS2 and ATS. To use the ATS LUT, set lut_path=luts/neuralfx-ats.cube in the INI.
+The package includes LUTs for ETS2 and ATS, plus a second ETS2 profile. To use the second ETS2 profile, set lut_path=luts/neuralfx-ets2-profile-2.cube in the INI; to use the ATS LUT, set lut_path=luts/neuralfx-ats.cube.
 Raytracing mode uses the game's color and depth buffers for approximate screen-space reflections and lighting. It cannot include off-screen objects. LUT grading and RCAS remain active.
+The rt_* INI keys control ray tracing strength, range, and projection, and reload within one second. To calibrate rt_near_plane, rt_far_plane, rt_vertical_fov, and rt_depth, use rt_debug=depth until depth forms a smooth gradient and rt_debug=normals until the ground appears light green; then set rt_debug=off again.
 With Steam Overlay enabled, use the screenshot key configured in Steam (F12 by default). When the integration is available, the screenshot sent to the library includes the active effects. The user confirmed that F12 screenshots and ETS2 photo-mode captures retain the effects in version 4.1.1. ATS validation is still pending.

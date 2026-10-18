@@ -29,5 +29,7 @@ int main() {
     if (!compile(photoreal, "PhotorealMain", "ps_5_0")) return 5;
     if (!compile(photoreal, "FinishMain", "ps_5_0")) return 6;
     if (!compile(raytracing, "TraceMain", "ps_5_0")) return 7;
+    if (!compile(directory / L"scene_tracer.hlsl", "TraceSceneMain", "cs_5_0")) return 8;
+    if (!compile(fullscreen, "SrgbCopyMain", "ps_5_0")) return 9;
     return 0;
 }

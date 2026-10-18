@@ -15,6 +15,7 @@ public:
     bool active() const noexcept { return active_.load(std::memory_order_relaxed); }
     void capture(ID3D11DeviceContext* context, ID3D11DepthStencilView* depth) noexcept;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> take_view() noexcept;
+    unsigned copies_per_frame() noexcept;
 
 private:
     bool prepare(const D3D11_TEXTURE2D_DESC& description,
@@ -29,5 +30,7 @@ private:
     UINT height_ = 0;
     DXGI_FORMAT format_ = DXGI_FORMAT_UNKNOWN;
     bool ready_ = false;
+    unsigned copies_ = 0;
+    unsigned copies_per_frame_ = 0;
 };
 }

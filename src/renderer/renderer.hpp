@@ -5,6 +5,7 @@
 #include "renderer/gpu_profiler.hpp"
 #include "renderer/lut_resource.hpp"
 #include "renderer/frame_status.hpp"
+#include "renderer/screen_space_pass.hpp"
 
 #include <d3d11.h>
 #include <dxgi.h>
@@ -30,8 +31,10 @@ private:
     void draw(ID3D11PixelShader* pixel, ID3D11ShaderResourceView* input,
         ID3D11RenderTargetView* output, ID3D11ShaderResourceView* neural = nullptr,
         ID3D11ShaderResourceView* lut = nullptr, ID3D11Buffer* parameters = nullptr);
-    void render_photoreal(ID3D11ShaderResourceView* input);
-    void render_screen_space(ID3D11ShaderResourceView* depth);
+    void render_processed();
+    void render_photoreal(ID3D11ShaderResourceView* input, ColorEncoding encoding);
+    bool render_screen_space(ID3D11ShaderResourceView* depth);
+    ColorEncoding input_encoding() const noexcept;
     void poll_hotkey() noexcept;
     void poll_config();
     void load_lut();
@@ -44,16 +47,16 @@ private:
     Config config_;
     RenderResourceManager resources_;
     GpuProfiler profiler_;
+    ScreenSpacePass screen_space_;
     Microsoft::WRL::ComPtr<ID3D11Device> device_;
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> context_;
     Microsoft::WRL::ComPtr<ID3D11VertexShader> vertex_;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> copy_pixel_;
+    Microsoft::WRL::ComPtr<ID3D11PixelShader> srgb_copy_pixel_;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> rcas_pixel_;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> photoreal_pixel_;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> finish_pixel_;
-    Microsoft::WRL::ComPtr<ID3D11PixelShader> trace_pixel_;
     Microsoft::WRL::ComPtr<ID3D11Buffer> constants_;
-    Microsoft::WRL::ComPtr<ID3D11Buffer> trace_constants_;
     Microsoft::WRL::ComPtr<ID3D11SamplerState> sampler_;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> neural_residual_;
     LutResource lut_;

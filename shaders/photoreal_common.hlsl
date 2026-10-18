@@ -1,3 +1,5 @@
+#include "color_space.hlsl"
+
 Texture2D source_texture : register(t0);
 Texture2D neural_texture : register(t1);
 Texture3D lut_texture : register(t2);
@@ -37,18 +39,6 @@ static const float3 luma_weights = float3(0.2126, 0.7152, 0.0722);
 
 float Luminance(float3 color) {
     return dot(color, luma_weights);
-}
-
-float3 SrgbToLinear(float3 color) {
-    float3 low = color / 12.92;
-    float3 high = pow(max((color + 0.055) / 1.055, 0.0), 2.4);
-    return lerp(high, low, step(color, 0.04045));
-}
-
-float3 LinearToSrgb(float3 color) {
-    float3 low = color * 12.92;
-    float3 high = 1.055 * pow(max(color, 0.0), 1.0 / 2.4) - 0.055;
-    return lerp(high, low, step(color, 0.0031308));
 }
 
 float3 LoadLinear(int2 position, int2 limit) {

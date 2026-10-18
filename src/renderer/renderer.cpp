@@ -1,7 +1,6 @@
 #include "renderer/renderer.hpp"
 #include "renderer/context_state.hpp"
 #include "renderer/photoreal_constants.hpp"
-#include "renderer/screen_space_constants.hpp"
 #include "renderer/capture_policy.hpp"
 #include "dxgi/depth_capture.hpp"
 #include "common/logger.hpp"
@@ -40,10 +39,7 @@ void Renderer::poll_config() {
         module_directory() / L"NeuralFX" / L"neuralfx.ini", error);
     if (error || modified == config_write_) return;
     config_write_ = modified;
-    auto updated = load_config();
-    config_.photoreal = updated.photoreal;
-    config_.sharpness = updated.sharpness;
-    config_.lut_path = updated.lut_path;
+    refresh_live_settings(config_, load_config());
     load_lut();
 }
 
@@ -75,14 +71,7 @@ FrameStatus Renderer::present(IDXGISwapChain* swapchain) {
         return FrameStatus::Processed;
     }
     if (config_.mode == TestMode::Photoreal || config_.mode == TestMode::Raytracing) {
-        ID3D11ShaderResourceView* input = resources_.input();
-        auto depth = config_.mode == TestMode::Raytracing
-            ? DepthCapture::instance().take_view() : nullptr;
-        if (depth) {
-            render_screen_space(depth.Get());
-            input = resources_.traced_input();
-        }
-        render_photoreal(input);
+        render_processed();
     } else {
         PhotorealConstants parameters{};
         parameters.rcas_strength = config_.sharpness;
@@ -108,12 +97,12 @@ void Renderer::reset_unlocked() noexcept {
     neural_residual_.Reset();
     lut_.reset();
     finish_pixel_.Reset();
-    trace_pixel_.Reset();
     photoreal_pixel_.Reset();
     rcas_pixel_.Reset();
+    srgb_copy_pixel_.Reset();
     copy_pixel_.Reset();
     vertex_.Reset();
-    trace_constants_.Reset();
+    screen_space_.reset();
     DepthCapture::instance().reset();
     context_.Reset();
     device_.Reset();
@@ -168,8 +157,7 @@ HRESULT Renderer::initialize(IDXGISwapChain* swapchain) {
     result = device_->CreateBuffer(&description, nullptr, &constants_);
     if (FAILED(result)) return result;
     if (config_.mode == TestMode::Raytracing) {
-        description.ByteWidth = sizeof(ScreenSpaceConstants);
-        result = device_->CreateBuffer(&description, nullptr, &trace_constants_);
+        result = screen_space_.initialize(device_.Get(), module_directory() / L"NeuralFX" / L"shaders");
         if (FAILED(result)) return result;
     }
     result = photoreal ? initialize_photoreal() : S_OK;

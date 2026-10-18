@@ -98,15 +98,26 @@ class PackageScriptTests(TestCase):
 
 
 class PackageCheckTests(TestCase):
-    def test_package_contains_luts_for_both_games(self) -> None:
+    def test_package_contains_luts_for_both_games_and_ets2_profile(self) -> None:
         with TemporaryDirectory() as directory:
             archive_path = Path(directory) / "luts.zip"
             with ZipFile(archive_path, "w") as archive:
-                for game in ("ets2", "ats"):
-                    source = Path("luts", f"neuralfx-{game}.cube")
+                for name in ("ets2", "ats", "ets2-profile-2"):
+                    source = Path("luts", f"neuralfx-{name}.cube")
                     archive.write(source, f"NeuralFX/luts/{source.name}")
             with ZipFile(archive_path) as archive:
                 check_lut(archive, set(archive.namelist()))
+
+    def test_rejects_package_without_ets2_profile_lut(self) -> None:
+        with TemporaryDirectory() as directory:
+            archive_path = Path(directory) / "luts.zip"
+            with ZipFile(archive_path, "w") as archive:
+                for name in ("ets2", "ats"):
+                    source = Path("luts", f"neuralfx-{name}.cube")
+                    archive.write(source, f"NeuralFX/luts/{source.name}")
+            with ZipFile(archive_path) as archive:
+                with self.assertRaisesRegex(SystemExit, "Unexpected package LUTs"):
+                    check_lut(archive, set(archive.namelist()))
 
     def test_selects_current_version_with_older_package_present(self) -> None:
         with TemporaryDirectory() as directory:

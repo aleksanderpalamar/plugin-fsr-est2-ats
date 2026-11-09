@@ -1,6 +1,7 @@
 #include "dxgi/context_hook.hpp"
 #include "dxgi/depth_capture.hpp"
 #include "dxgi/vtable_patch.hpp"
+#include "diagnostics/frame_tracer.hpp"
 #include "common/logger.hpp"
 
 #include <d3d11.h>
@@ -44,6 +45,7 @@ void STDMETHODCALLTYPE on_set_targets(ID3D11DeviceContext* context, UINT count,
     forward_depth_binding(context, [&] {
         original_set_targets(context, count, targets, depth);
     });
+    diagnostics::trace_targets_bound(context);
 }
 
 void STDMETHODCALLTYPE on_set_targets_and_uavs(ID3D11DeviceContext* context, UINT count,
@@ -55,6 +57,7 @@ void STDMETHODCALLTYPE on_set_targets_and_uavs(ID3D11DeviceContext* context, UIN
         original_set_targets_and_uavs(context, count, targets, depth,
             start, uav_count, uavs, counts);
     });
+    diagnostics::trace_targets_bound(context);
 }
 }
 

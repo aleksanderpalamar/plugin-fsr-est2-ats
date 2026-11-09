@@ -105,6 +105,14 @@ The supported screenshot path uses single-sample, 8-bit RGBA/BGRA UNORM or SRGB 
 
 The user confirmed that F12 screenshots and photo-mode captures in ETS2 retain the plugin effects in 4.1.1. The successful report did not specify Windows or Proton. Remaining manual checks include ATS, the platform matrix, one library entry per request, matching `ScreenshotReady success` logs, disabled effects, multiple requests, resolution changes, fullscreen/windowed changes, and Alt+Tab.
 
+## Resource trace diagnostics
+
+The resource trace records how the game builds a frame, as evidence for locating the scene color before the HUD, depth, motion-vector candidates, and the render resolution. Create an empty file named `capture-trace` in the `NeuralFX` folder while the game is running, in any `mode`. Within one second, the plugin deletes the file, logs `Trace capture requested`, and records the next two complete frames into `NeuralFX/logs/neuralfx.log`. Create the file again for another capture.
+
+Each frame is written between `Trace frame begin` and `Trace frame end`. Entries list, in order, render-target bindings (`pass`, with `rt=` color targets, `ds=` depth, the first viewport, the draw count, and `reads=` for pixel-shader inputs that were render targets earlier in the frame), copies and resolves involving those targets, and color and depth clears. `bb` is the swapchain back buffer. `Trace target` lines summarize every target with its size, DXGI format number, sample count, writes, and reads. Draws issued by NeuralFX itself during `Present` are not recorded.
+
+The draw, copy, clear, viewport, and shader-resource hooks are installed only after the first capture request. Each frame keeps at most 4096 entries; the `dropped=` count reports any excess. Compute dispatches, constant buffers, projection matrices, and deferred contexts are not traced yet.
+
 ## Verified scope and limitations
 
 - The plugin reads the already composed backbuffer, so post-processing also affects the HUD. The code accepts only 8-bit RGBA/BGRA backbuffer formats. For `_SRGB` formats, the SRV decodes and the RTV encodes sRGB in hardware. For `_UNORM` formats, the shader assumes sRGB-encoded SDR values, decodes them for grading, and writes encoded values after RCAS. The actual ETS2 color space still needs validation through a frame capture.

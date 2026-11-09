@@ -1,0 +1,16 @@
+#pragma once
+
+#include "diagnostics/frame_trace.hpp"
+
+#include <d3d11.h>
+#include <cstdint>
+#include <optional>
+
+namespace neuralfx::diagnostics {
+std::uint64_t resource_id(ID3D11Resource* resource) noexcept;
+std::uint64_t resource_id(ID3D11View* view) noexcept;
+std::optional<TraceTarget> describe_resource(ID3D11Resource* resource,
+    DXGI_FORMAT view_format = DXGI_FORMAT_UNKNOWN) noexcept;
+std::optional<TraceTarget> describe_view(ID3D11RenderTargetView* view) noexcept;
+std::optional<TraceTarget> describe_view(ID3D11DepthStencilView* view) noexcept;
+}

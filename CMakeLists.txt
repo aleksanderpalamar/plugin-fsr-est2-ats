@@ -101,7 +101,7 @@ else()
     target_compile_options(dxgi PRIVATE -Wall -Wextra)
 endif()
 target_include_directories(dxgi PRIVATE src)
-target_link_libraries(dxgi PRIVATE neuralfx_config neuralfx_screenshots
+target_link_libraries(dxgi PRIVATE neuralfx_config neuralfx_screenshots neuralfx_trace_d3d11
     d3d11 ${D3DCOMPILER_LIBRARY} dxguid user32 kernel32)
 set_target_properties(dxgi PROPERTIES OUTPUT_NAME dxgi PREFIX "")
 
@@ -146,6 +146,8 @@ target_compile_features(neuralfx_depth_format_tests PRIVATE cxx_std_20)
 target_include_directories(neuralfx_depth_format_tests PRIVATE src)
 add_test(NAME neuralfx_depth_format_tests COMMAND neuralfx_depth_format_tests)
 
+include(cmake/diagnostics_d3d11.cmake)
+
 add_executable(neuralfx_depth_hook_tests
     tests/depth_hook_tests.cpp
     src/dxgi/context_hook.cpp
@@ -156,7 +158,7 @@ add_executable(neuralfx_depth_hook_tests
 target_compile_features(neuralfx_depth_hook_tests PRIVATE cxx_std_20)
 target_compile_definitions(neuralfx_depth_hook_tests PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
 target_include_directories(neuralfx_depth_hook_tests PRIVATE src)
-target_link_libraries(neuralfx_depth_hook_tests PRIVATE d3d11 user32)
+target_link_libraries(neuralfx_depth_hook_tests PRIVATE neuralfx_trace_d3d11 d3d11 user32)
 set_target_properties(neuralfx_depth_hook_tests PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests)
 add_test(NAME neuralfx_depth_hook_tests COMMAND neuralfx_depth_hook_tests)

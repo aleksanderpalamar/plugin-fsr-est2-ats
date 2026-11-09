@@ -1,6 +1,7 @@
 #include "dxgi/swapchain_hook.hpp"
 #include "dxgi/context_hook.hpp"
 #include "dxgi/vtable_patch.hpp"
+#include "diagnostics/frame_tracer.hpp"
 #include "renderer/renderer.hpp"
 #include "screenshots/integration.hpp"
 #include "common/logger.hpp"
@@ -60,6 +61,7 @@ HRESULT STDMETHODCALLTYPE on_present(IDXGISwapChain* swapchain, UINT interval, U
     static thread_local bool in_hook = false;
     if (in_hook || (flags & DXGI_PRESENT_TEST)) return original_present(swapchain, interval, flags);
     in_hook = true;
+    for (const auto& line : diagnostics::trace_present_begin()) log(line);
     set_plugin_present(true);
     FrameStatus frame = FrameStatus::Failed;
     try {
@@ -69,8 +71,11 @@ HRESULT STDMETHODCALLTYPE on_present(IDXGISwapChain* swapchain, UINT interval, U
     }
     present_steam_screenshot(swapchain, frame);
     set_plugin_present(false);
+    HRESULT result = original_present(swapchain, interval, flags);
+    diagnostics::poll_capture_request();
+    diagnostics::trace_present_end(swapchain);
     in_hook = false;
-    return original_present(swapchain, interval, flags);
+    return result;
 }
 
 HRESULT STDMETHODCALLTYPE on_resize(IDXGISwapChain* swapchain, UINT count, UINT width, UINT height, DXGI_FORMAT format, UINT flags) noexcept {

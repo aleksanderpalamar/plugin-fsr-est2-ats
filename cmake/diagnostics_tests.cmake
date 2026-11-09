@@ -1,0 +1,14 @@
+add_library(neuralfx_diagnostics STATIC src/diagnostics/frame_trace.cpp
+    src/diagnostics/frame_trace_format.cpp src/diagnostics/trace_session.cpp
+    src/diagnostics/trace_trigger.cpp)
+target_compile_features(neuralfx_diagnostics PUBLIC cxx_std_20)
+target_include_directories(neuralfx_diagnostics PUBLIC src)
+add_executable(neuralfx_frame_trace_tests tests/frame_trace_tests.cpp)
+target_link_libraries(neuralfx_frame_trace_tests PRIVATE neuralfx_diagnostics)
+add_test(NAME neuralfx_frame_trace_tests COMMAND neuralfx_frame_trace_tests)
+add_executable(neuralfx_trace_session_tests tests/trace_session_tests.cpp)
+target_link_libraries(neuralfx_trace_session_tests PRIVATE neuralfx_diagnostics)
+add_test(NAME neuralfx_trace_session_tests COMMAND neuralfx_trace_session_tests)
+add_executable(neuralfx_trace_trigger_tests tests/trace_trigger_tests.cpp)
+target_link_libraries(neuralfx_trace_trigger_tests PRIVATE neuralfx_diagnostics)
+add_test(NAME neuralfx_trace_trigger_tests COMMAND neuralfx_trace_trigger_tests)

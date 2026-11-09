@@ -42,6 +42,7 @@ add_test(NAME neuralfx_raytracing_scene_tests COMMAND neuralfx_raytracing_scene_
 add_executable(neuralfx_raytracing_gpu_data_tests tests/raytracing_gpu_data_tests.cpp)
 target_link_libraries(neuralfx_raytracing_gpu_data_tests PRIVATE neuralfx_raytracing)
 add_test(NAME neuralfx_raytracing_gpu_data_tests COMMAND neuralfx_raytracing_gpu_data_tests)
+include(cmake/diagnostics_tests.cmake)
 if(NOT WIN32)
     return()
 endif()

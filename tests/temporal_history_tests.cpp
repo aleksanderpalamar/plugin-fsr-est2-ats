@@ -102,10 +102,22 @@ int several_observations_case() {
     auto expected = sequence_jitter(10);
     return decision.jitter && decision.jitter->x == expected.x ? 0 : 82;
 }
+
+int rejected_case() {
+    TemporalHistory history;
+    history.advance(frame(0, seen(0, 3)));
+    if (int code = expect(history, frame(1), TemporalStatus::Ready, 90)) return code;
+    auto input = frame(2);
+    input.camera_rejected = true;
+    if (int code = expect(history, input, TemporalStatus::Unsynced, 92)) return code;
+    if (int code = expect(history, frame(3), TemporalStatus::Unsynced, 94)) return code;
+    return expect(history, frame(4, seen(3, 6)), TemporalStatus::FirstFrame, 96);
+}
 }
 
 int main() {
-    for (auto test_case : {sequence_case, prediction_case, resync_case, cut_case, several_observations_case}) {
+    for (auto test_case : {sequence_case, prediction_case, resync_case, cut_case, several_observations_case,
+             rejected_case}) {
         if (int code = test_case(); code != 0) return code;
     }
     return 0;

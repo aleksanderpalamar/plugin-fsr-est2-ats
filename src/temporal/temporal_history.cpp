@@ -26,6 +26,7 @@ int severity(SyncResult result) {
 TemporalDecision TemporalHistory::advance(const FrameInput& input) noexcept {
     TemporalDecision decision;
     decision.sync = synchronize(input.observations);
+    if (input.camera_rejected) reset();
     decision.status = classify(input);
     if (predicts(decision.status)) decision.jitter = jitter_.predict(input.frame);
     return decision;

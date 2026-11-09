@@ -16,6 +16,7 @@ struct FrameInput {
     bool temporal_resolve = false;
     std::vector<JitterObservation> observations;
     bool camera_jump = false;
+    bool camera_rejected = false;
 };
 
 struct SyncReport {

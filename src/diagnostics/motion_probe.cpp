@@ -125,7 +125,7 @@ void inspect(Probe& state, const Swapchain& target) {
     auto sample = temporal::scene_tracker().finish_frame(target.context.Get());
     auto report = review(state, sample);
     auto decision = state.history.advance({sample.index, sample.frame.render, sample.camera != nullptr,
-        sample.frame.temporal_resolve, report.jitters, report.jump});
+        sample.frame.temporal_resolve, report.jitters, report.jump, !report.rejections.empty()});
     auto cpu_us = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - start).count();
     record(state, decision, sample, report, cpu_us);
     if (!state.ready || !decision.jitter || !sample.camera || !sample.depth) return;

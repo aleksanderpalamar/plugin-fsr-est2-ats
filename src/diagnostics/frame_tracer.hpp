@@ -24,13 +24,19 @@ TraceSession& trace_session() noexcept;
 }
 
 template <typename Action>
-void record(Action&& action) noexcept {
+void record_pipeline(Action&& action) noexcept {
     if (!detail::tracing().load(std::memory_order_acquire)) return;
     std::lock_guard lock(detail::trace_mutex());
-    if (!detail::trace_session().recording()) return;
+    auto& session = detail::trace_session();
+    if (!session.recording()) return;
     try {
-        action(detail::trace_session().trace());
+        action(session.trace(), session.pipeline());
     } catch (...) {
     }
+}
+
+template <typename Action>
+void record(Action&& action) noexcept {
+    record_pipeline([&](FrameTrace& trace, PipelineState&) { action(trace); });
 }
 }

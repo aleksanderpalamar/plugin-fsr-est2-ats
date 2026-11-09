@@ -43,4 +43,25 @@ std::optional<TraceTarget> describe_view(ID3D11DepthStencilView* view) noexcept 
     view->GetDesc(&description);
     return describe_resource(resource_of(view).Get(), description.Format);
 }
+
+std::optional<TraceInput> describe_input(ID3D11ShaderResourceView* view) noexcept {
+    auto resource = resource_of(view);
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
+    if (!resource || FAILED(resource.As(&texture))) return std::nullopt;
+    D3D11_TEXTURE2D_DESC description{};
+    texture->GetDesc(&description);
+    if (description.BindFlags & D3D11_BIND_DEPTH_STENCIL)
+        return TraceInput{*describe_resource(resource.Get()), TargetRole::Depth};
+    if (!(description.BindFlags & D3D11_BIND_RENDER_TARGET)) return std::nullopt;
+    return TraceInput{*describe_resource(resource.Get()), TargetRole::Color};
+}
+
+std::optional<std::uint32_t> constant_buffer_size(ID3D11Resource* resource) noexcept {
+    Microsoft::WRL::ComPtr<ID3D11Buffer> buffer;
+    if (!resource || FAILED(resource->QueryInterface(IID_PPV_ARGS(&buffer)))) return std::nullopt;
+    D3D11_BUFFER_DESC description{};
+    buffer->GetDesc(&description);
+    if (!(description.BindFlags & D3D11_BIND_CONSTANT_BUFFER)) return std::nullopt;
+    return description.ByteWidth;
+}
 }

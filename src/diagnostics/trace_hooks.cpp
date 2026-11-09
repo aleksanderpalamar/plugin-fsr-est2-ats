@@ -3,15 +3,36 @@
 #include "diagnostics/trace_resources.hpp"
 #include "dxgi/vtable_patch.hpp"
 
+#include <type_traits>
+
 namespace neuralfx::diagnostics {
 namespace {
+template <typename First, typename... Rest>
+std::uint32_t element_count(First first, Rest...) noexcept {
+    if constexpr (std::is_same_v<First, UINT>) return first;
+    return 0;
+}
+
+inline std::uint32_t element_count() noexcept {
+    return 0;
+}
+
+void record_draw(std::uint32_t count) noexcept {
+    record_pipeline([&](FrameTrace& trace, PipelineState& state) {
+        if (trace.wants_constants())
+            for (auto& snapshot : state.constants(4)) trace.constants(std::move(snapshot));
+        if (trace.wants_draw_detail()) trace.detail({count, state.pixel_shader(), state.inputs()});
+        trace.draw();
+    });
+}
+
 template <size_t Index, typename... Arguments>
 struct DrawHook {
     using Function = void(STDMETHODCALLTYPE*)(ID3D11DeviceContext*, Arguments...);
     static inline Function original = nullptr;
 
     static void STDMETHODCALLTYPE call(ID3D11DeviceContext* context, Arguments... arguments) noexcept {
-        record([](FrameTrace& trace) { trace.draw(); });
+        record_draw(element_count(arguments...));
         original(context, arguments...);
     }
 
@@ -28,8 +49,6 @@ using DrawAuto = DrawHook<38>;
 using DrawIndexedIndirect = DrawHook<39, ID3D11Buffer*, UINT>;
 using DrawInstancedIndirect = DrawHook<40, ID3D11Buffer*, UINT>;
 
-using SetResources = void(STDMETHODCALLTYPE*)(ID3D11DeviceContext*, UINT, UINT,
-    ID3D11ShaderResourceView* const*);
 using SetViewports = void(STDMETHODCALLTYPE*)(ID3D11DeviceContext*, UINT, const D3D11_VIEWPORT*);
 using CopyRegion = void(STDMETHODCALLTYPE*)(ID3D11DeviceContext*, ID3D11Resource*, UINT,
     UINT, UINT, UINT, ID3D11Resource*, UINT, const D3D11_BOX*);
@@ -39,7 +58,6 @@ using Resolve = void(STDMETHODCALLTYPE*)(ID3D11DeviceContext*, ID3D11Resource*, 
 using ClearColor = void(STDMETHODCALLTYPE*)(ID3D11DeviceContext*, ID3D11RenderTargetView*, const FLOAT*);
 using ClearDepth = void(STDMETHODCALLTYPE*)(ID3D11DeviceContext*, ID3D11DepthStencilView*, UINT, FLOAT, UINT8);
 
-SetResources original_set_resources = nullptr;
 SetViewports original_set_viewports = nullptr;
 CopyRegion original_copy_region = nullptr;
 CopyWhole original_copy_whole = nullptr;
@@ -51,15 +69,6 @@ void record_copy(ID3D11Resource* destination, ID3D11Resource* source) noexcept {
     record([&](FrameTrace& trace) {
         if (auto target = describe_resource(destination)) trace.copy(resource_id(source), *target);
     });
-}
-
-void STDMETHODCALLTYPE on_set_resources(ID3D11DeviceContext* context, UINT start, UINT count,
-    ID3D11ShaderResourceView* const* views) noexcept {
-    record([&](FrameTrace& trace) {
-        for (UINT index = 0; views && index < count; ++index)
-            if (views[index]) trace.read(TraceTarget{resource_id(views[index])}, TargetRole::Color);
-    });
-    original_set_resources(context, start, count, views);
 }
 
 void STDMETHODCALLTYPE on_set_viewports(ID3D11DeviceContext* context, UINT count,
@@ -109,8 +118,7 @@ bool install_draws(ID3D11DeviceContext* context) noexcept {
 }
 
 bool install_resources(ID3D11DeviceContext* context) noexcept {
-    return patch_vtable<SetResources>(context, 8, &on_set_resources, original_set_resources) &&
-        patch_vtable<SetViewports>(context, 44, &on_set_viewports, original_set_viewports) &&
+    return patch_vtable<SetViewports>(context, 44, &on_set_viewports, original_set_viewports) &&
         patch_vtable<CopyRegion>(context, 46, &on_copy_region, original_copy_region) &&
         patch_vtable<CopyWhole>(context, 47, &on_copy_whole, original_copy_whole) &&
         patch_vtable<ClearColor>(context, 50, &on_clear_color, original_clear_color) &&
@@ -121,6 +129,6 @@ bool install_resources(ID3D11DeviceContext* context) noexcept {
 
 bool install_trace_hooks(ID3D11DeviceContext* context) noexcept {
     if (!context) return false;
-    return install_draws(context) && install_resources(context);
+    return install_draws(context) && install_resources(context) && install_state_hooks(context);
 }
 }

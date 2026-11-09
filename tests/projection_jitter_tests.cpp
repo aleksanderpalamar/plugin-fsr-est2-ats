@@ -49,10 +49,27 @@ int rejection_case() {
     auto still = projection_jitter(projection(0.0f, 0.0f), scene);
     return still && still->x == 0.0f && still->y == 0.0f ? 0 : 43;
 }
+
+int expect_fault(const Matrix4& matrix, RenderSize size, CameraFault fault, int code) {
+    auto result = evaluate_jitter(matrix, size);
+    const auto* found = std::get_if<CameraFault>(&result);
+    return found && *found == fault ? 0 : code;
+}
+
+int fault_case() {
+    Matrix4 orthographic = projection(0.0f, 0.0f);
+    orthographic[14] = 0.0f;
+    orthographic[15] = 1.0f;
+    if (int code = expect_fault(orthographic, scene, CameraFault::NotPerspective, 50)) return code;
+    if (int code = expect_fault(projection(0.0f, 0.0f), RenderSize{1440, 0}, CameraFault::EmptySize, 51)) return code;
+    if (int code = expect_fault(projection(0.0f, 0.002f), scene, CameraFault::JitterOutOfRange, 52)) return code;
+    auto valid = evaluate_jitter(projection(0.0006537968f, -0.0007760036f), scene);
+    return std::holds_alternative<Jitter>(valid) ? 0 : 53;
+}
 }
 
 int main() {
-    for (auto test_case : {captured_frames_case, left_handed_case, rejection_case}) {
+    for (auto test_case : {captured_frames_case, left_handed_case, rejection_case, fault_case}) {
         if (int code = test_case(); code != 0) return code;
     }
     return 0;

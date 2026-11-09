@@ -62,6 +62,22 @@ int rejection_case() {
     return camera_state({view, orthographic}, scene) ? 31 : 0;
 }
 
+int fault_case() {
+    auto singular = evaluate_camera({Matrix4{}, first_frame}, scene);
+    const auto* rejected = std::get_if<CameraRejection>(&singular);
+    if (!rejected || rejected->fault != CameraFault::SingularView) return 50;
+    Matrix4 orthographic = first_frame;
+    orthographic[12] = 0.0f;
+    orthographic[14] = 0.0f;
+    orthographic[15] = 1.0f;
+    auto flat = evaluate_camera({view, orthographic}, scene);
+    rejected = std::get_if<CameraRejection>(&flat);
+    if (!rejected || rejected->fault != CameraFault::NotPerspective) return 51;
+    if (!near(rejected->projection[15], 1.0f, 1e-4f) || !near(rejected->projection[0], 1.2482098f, 1e-4f)) return 52;
+    auto valid = evaluate_camera({view, first_frame}, scene);
+    return std::holds_alternative<CameraState>(valid) ? 0 : 53;
+}
+
 int inverse_case() {
     auto inverted = inverse(view);
     if (!inverted) return 40;
@@ -75,7 +91,7 @@ int inverse_case() {
 }
 
 int main() {
-    for (auto test_case : {inverse_case, jitter_case, unjittered_case, rejection_case}) {
+    for (auto test_case : {inverse_case, jitter_case, unjittered_case, rejection_case, fault_case}) {
         if (int code = test_case(); code != 0) return code;
     }
     return 0;

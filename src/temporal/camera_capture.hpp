@@ -9,11 +9,6 @@
 #include <wrl/client.h>
 
 namespace neuralfx::temporal {
-struct CameraObservation {
-    std::uint64_t frame = 0;
-    CameraMatrices matrices;
-};
-
 class CameraCapture {
 public:
     bool capture(ID3D11DeviceContext* context, std::uint64_t frame) noexcept;

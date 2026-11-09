@@ -28,13 +28,19 @@ bool within_pixel(Jitter jitter) {
 }
 }
 
-std::optional<Jitter> projection_jitter(const Matrix4& projection, RenderSize size) noexcept {
-    if (size.width == 0 || size.height == 0) return std::nullopt;
+std::variant<Jitter, CameraFault> evaluate_jitter(const Matrix4& projection, RenderSize size) noexcept {
+    if (size.width == 0 || size.height == 0) return CameraFault::EmptySize;
     auto w = depth_sign(projection);
-    if (!w) return std::nullopt;
+    if (!w) return CameraFault::NotPerspective;
     Jitter jitter{at(projection, 0, 2) / *w * static_cast<float>(size.width) * 0.5f,
         -at(projection, 1, 2) / *w * static_cast<float>(size.height) * 0.5f};
-    if (!within_pixel(jitter)) return std::nullopt;
+    if (!within_pixel(jitter)) return CameraFault::JitterOutOfRange;
     return jitter;
+}
+
+std::optional<Jitter> projection_jitter(const Matrix4& projection, RenderSize size) noexcept {
+    auto result = evaluate_jitter(projection, size);
+    if (const auto* jitter = std::get_if<Jitter>(&result)) return *jitter;
+    return std::nullopt;
 }
 }

@@ -1,12 +1,11 @@
 #pragma once
 
-#include <array>
+#include "temporal/matrix4.hpp"
+
 #include <cstdint>
 #include <optional>
 
 namespace neuralfx::temporal {
-using Matrix4 = std::array<float, 16>;
-
 struct RenderSize {
     std::uint32_t width = 0;
     std::uint32_t height = 0;

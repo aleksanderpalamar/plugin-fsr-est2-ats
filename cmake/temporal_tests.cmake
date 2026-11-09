@@ -1,6 +1,10 @@
-add_library(neuralfx_temporal STATIC src/temporal/projection_jitter.cpp)
+add_library(neuralfx_temporal STATIC src/temporal/projection_jitter.cpp
+    src/temporal/matrix4.cpp src/temporal/camera_state.cpp)
 target_compile_features(neuralfx_temporal PUBLIC cxx_std_20)
 target_include_directories(neuralfx_temporal PUBLIC src)
 add_executable(neuralfx_projection_jitter_tests tests/projection_jitter_tests.cpp)
 target_link_libraries(neuralfx_projection_jitter_tests PRIVATE neuralfx_temporal)
 add_test(NAME neuralfx_projection_jitter_tests COMMAND neuralfx_projection_jitter_tests)
+add_executable(neuralfx_camera_state_tests tests/camera_state_tests.cpp)
+target_link_libraries(neuralfx_camera_state_tests PRIVATE neuralfx_temporal)
+add_test(NAME neuralfx_camera_state_tests COMMAND neuralfx_camera_state_tests)

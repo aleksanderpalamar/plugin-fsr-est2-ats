@@ -9,7 +9,9 @@ constexpr RenderSize scene{1440, 1080};
 
 FrameInput frame(std::uint64_t index, std::optional<JitterObservation> observation = std::nullopt,
     RenderSize size = scene) {
-    return {index, size, true, true, observation};
+    FrameInput input{index, size, true, true, {}, false};
+    if (observation) input.observations.push_back(*observation);
+    return input;
 }
 
 JitterObservation seen(std::uint64_t index, std::uint32_t phase) {
@@ -21,7 +23,7 @@ int expect(TemporalHistory& history, const FrameInput& input, TemporalStatus sta
     if (decision.status != status) return code;
     bool predicted = decision.jitter.has_value();
     bool wanted = status == TemporalStatus::Ready || status == TemporalStatus::FirstFrame ||
-        status == TemporalStatus::Resized;
+        status == TemporalStatus::Resized || status == TemporalStatus::CameraCut;
     return predicted == wanted ? 0 : code + 1;
 }
 
@@ -36,14 +38,14 @@ int sequence_case() {
         {frame(1), TemporalStatus::Unsynced},
         {frame(2, seen(0, 7)), TemporalStatus::FirstFrame},
         {frame(3, seen(1, 8)), TemporalStatus::Ready},
-        {{4, scene, true, false, std::nullopt}, TemporalStatus::NoJitter},
+        {{4, scene, true, false, {}, false}, TemporalStatus::NoJitter},
         {frame(5), TemporalStatus::Unsynced},
         {frame(6, seen(4, 0)), TemporalStatus::FirstFrame},
-        {{7, scene, false, true, std::nullopt}, TemporalStatus::NoCamera},
+        {{7, scene, false, true, {}, false}, TemporalStatus::NoCamera},
         {frame(8), TemporalStatus::FirstFrame},
         {frame(9, std::nullopt, RenderSize{1280, 720}), TemporalStatus::Resized},
         {frame(10, std::nullopt, RenderSize{1280, 720}), TemporalStatus::Ready},
-        {{11, std::nullopt, false, false, std::nullopt}, TemporalStatus::NoScene},
+        {{11, std::nullopt, false, false, {}, false}, TemporalStatus::NoScene},
         {frame(12), TemporalStatus::FirstFrame},
         {frame(13), TemporalStatus::Ready},
     };
@@ -74,10 +76,36 @@ int resync_case() {
     if (int code = expect(history, frame(4, JitterObservation{3, Jitter{}}), TemporalStatus::Unsynced, 66)) return code;
     return 0;
 }
+
+int cut_case() {
+    TemporalHistory history;
+    history.advance(frame(0, seen(0, 3)));
+    history.advance(frame(1));
+    auto input = frame(2);
+    input.camera_jump = true;
+    if (int code = expect(history, input, TemporalStatus::CameraCut, 70)) return code;
+    if (int code = expect(history, frame(3), TemporalStatus::Ready, 72)) return code;
+    input = frame(4);
+    input.camera_jump = true;
+    input.temporal_resolve = false;
+    return expect(history, input, TemporalStatus::NoJitter, 74);
+}
+
+int several_observations_case() {
+    TemporalHistory history;
+    history.advance(frame(0, seen(0, 3)));
+    auto input = frame(3);
+    input.observations = {seen(1, 4), seen(2, 9), seen(3, 10)};
+    auto decision = history.advance(input);
+    if (decision.status != TemporalStatus::FirstFrame) return 80;
+    if (!decision.sync || decision.sync->result != SyncResult::Resynced || decision.sync->frame != 2) return 81;
+    auto expected = sequence_jitter(10);
+    return decision.jitter && decision.jitter->x == expected.x ? 0 : 82;
+}
 }
 
 int main() {
-    for (auto test_case : {sequence_case, prediction_case, resync_case}) {
+    for (auto test_case : {sequence_case, prediction_case, resync_case, cut_case, several_observations_case}) {
         if (int code = test_case(); code != 0) return code;
     }
     return 0;

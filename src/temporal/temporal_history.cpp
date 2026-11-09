@@ -10,13 +10,22 @@ bool same_size(RenderSize left, RenderSize right) {
 
 bool predicts(TemporalStatus status) {
     return status == TemporalStatus::Ready || status == TemporalStatus::FirstFrame ||
-        status == TemporalStatus::Resized;
+        status == TemporalStatus::Resized || status == TemporalStatus::CameraCut;
+}
+
+int severity(SyncResult result) {
+    switch (result) {
+    case SyncResult::Confirmed: return 0;
+    case SyncResult::Resynced: return 1;
+    case SyncResult::Lost: return 2;
+    }
+    return 2;
 }
 }
 
 TemporalDecision TemporalHistory::advance(const FrameInput& input) noexcept {
     TemporalDecision decision;
-    decision.sync = synchronize(input.observation);
+    decision.sync = synchronize(input.observations);
     decision.status = classify(input);
     if (predicts(decision.status)) decision.jitter = jitter_.predict(input.frame);
     return decision;
@@ -27,11 +36,14 @@ void TemporalHistory::reset() noexcept {
     size_.reset();
 }
 
-std::optional<SyncReport> TemporalHistory::synchronize(const std::optional<JitterObservation>& observation) noexcept {
-    if (!observation) return std::nullopt;
-    auto result = jitter_.observe(*observation);
-    if (result != SyncResult::Confirmed) size_.reset();
-    return SyncReport{observation->frame, result};
+std::optional<SyncReport> TemporalHistory::synchronize(const std::vector<JitterObservation>& observations) noexcept {
+    std::optional<SyncReport> report;
+    for (const auto& observation : observations) {
+        auto result = jitter_.observe(observation);
+        if (result != SyncResult::Confirmed) size_.reset();
+        if (!report || severity(result) >= severity(report->result)) report = SyncReport{observation.frame, result};
+    }
+    return report;
 }
 
 TemporalStatus TemporalHistory::classify(const FrameInput& input) noexcept {
@@ -44,6 +56,7 @@ TemporalStatus TemporalHistory::classify(const FrameInput& input) noexcept {
     if (!jitter_.predict(input.frame)) return invalidate(TemporalStatus::Unsynced);
     auto previous = std::exchange(size_, input.render);
     if (!previous) return TemporalStatus::FirstFrame;
+    if (input.camera_jump) return TemporalStatus::CameraCut;
     return same_size(*previous, *input.render) ? TemporalStatus::Ready : TemporalStatus::Resized;
 }
 

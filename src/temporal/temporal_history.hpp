@@ -4,16 +4,18 @@
 
 #include <cstdint>
 #include <optional>
+#include <vector>
 
 namespace neuralfx::temporal {
-enum class TemporalStatus { Ready, FirstFrame, Resized, NoScene, NoCamera, NoJitter, Unsynced };
+enum class TemporalStatus { Ready, FirstFrame, Resized, CameraCut, NoScene, NoCamera, NoJitter, Unsynced };
 
 struct FrameInput {
     std::uint64_t frame = 0;
     std::optional<RenderSize> render;
     bool camera = false;
     bool temporal_resolve = false;
-    std::optional<JitterObservation> observation;
+    std::vector<JitterObservation> observations;
+    bool camera_jump = false;
 };
 
 struct SyncReport {
@@ -33,7 +35,7 @@ public:
     void reset() noexcept;
 
 private:
-    std::optional<SyncReport> synchronize(const std::optional<JitterObservation>& observation) noexcept;
+    std::optional<SyncReport> synchronize(const std::vector<JitterObservation>& observations) noexcept;
     TemporalStatus classify(const FrameInput& input) noexcept;
     TemporalStatus invalidate(TemporalStatus status) noexcept;
 

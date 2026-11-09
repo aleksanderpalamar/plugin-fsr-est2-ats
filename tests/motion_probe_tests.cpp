@@ -42,13 +42,14 @@ std::string log_since(std::uintmax_t offset) {
     return content.str();
 }
 
-CameraValues camera_for(std::uint32_t phase) {
+CameraValues camera_for(std::uint32_t phase, float shift) {
     temporal::Matrix4 view;
     temporal::Matrix4 view_projection;
     std::copy(captured_camera.begin(), captured_camera.begin() + 16, view.begin());
     std::copy(captured_camera.begin() + 16, captured_camera.end(), view_projection.begin());
     temporal::RenderSize size{render_width, render_height};
     auto projection = temporal::camera_state({view, view_projection}, size)->projection;
+    view[3] += shift;
     auto jitter = temporal::sequence_jitter(phase);
     projection[2] = -jitter.x * 2.0f / static_cast<float>(render_width);
     projection[6] = jitter.y * 2.0f / static_cast<float>(render_height);
@@ -59,8 +60,8 @@ CameraValues camera_for(std::uint32_t phase) {
     return values;
 }
 
-void upload_camera(Device& gpu, const Targets& targets, std::uint32_t phase) {
-    auto values = camera_for(phase);
+void upload_camera(Device& gpu, const Targets& targets, std::uint32_t phase, float shift) {
+    auto values = camera_for(phase, shift);
     D3D11_BOX box{camera_offset * 16, 0, 0, camera_offset * 16 + static_cast<UINT>(sizeof(values)), 1, 1};
     gpu.context->UpdateSubresource(targets.camera.Get(), 0, &box, values.data(), 0, 0);
 }
@@ -69,9 +70,10 @@ void request_toggle() {
     std::ofstream(neuralfx::module_directory() / L"NeuralFX" / L"motion-debug").put('\n');
 }
 
-void present(Device& gpu, const Targets& targets, ID3D11RenderTargetView* output, std::uint32_t phase) {
+void present(Device& gpu, const Targets& targets, ID3D11RenderTargetView* output, std::uint32_t phase,
+    float shift) {
     const float black[4]{0.0f, 0.0f, 0.0f, 1.0f};
-    upload_camera(gpu, targets, phase);
+    upload_camera(gpu, targets, phase, shift);
     gpu.context->ClearRenderTargetView(output, black);
     gpu.context->ClearDepthStencilView(targets.depth_view.Get(), D3D11_CLEAR_DEPTH, 0.5f, 0);
     game_frame(gpu, targets, true);
@@ -129,12 +131,16 @@ int main() {
     auto offset = log_size();
     request_toggle();
     diagnostics::motion_probe_frame_end(gpu.swapchain.Get());
-    for (std::uint32_t phase = 3; phase < 3 + 12; ++phase) present(gpu, targets, output.Get(), phase);
+    for (std::uint32_t phase = 3; phase < 3 + 16; ++phase)
+        present(gpu, targets, output.Get(), phase, phase < 11 ? 0.0f : 10.0f);
     int result = check(gpu, backbuffer.Get());
     auto log = log_since(offset);
     if (result == 0 && log.find("status=ready") == std::string::npos) result = 30;
     if (result == 0 && log.find("sync=confirmed@") == std::string::npos) result = 31;
     if (result == 0 && log.find("wait_us") != std::string::npos) result = 32;
+    if (result == 0 && log.find("status=camera-cut") == std::string::npos) result = 33;
+    if (result == 0 && log.find("Motion camera jump") == std::string::npos) result = 34;
+    if (result == 0 && log.find("Motion camera rejected") != std::string::npos) result = 35;
     DestroyWindow(window);
     return result;
 }

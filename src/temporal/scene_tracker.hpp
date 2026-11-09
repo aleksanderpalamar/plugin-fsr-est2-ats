@@ -14,7 +14,7 @@ struct SceneSample {
     SceneFrame frame;
     Microsoft::WRL::ComPtr<ID3D11Buffer> camera;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> depth;
-    std::optional<CameraObservation> observation;
+    std::vector<CameraObservation> observations;
 };
 
 class SceneTracker {

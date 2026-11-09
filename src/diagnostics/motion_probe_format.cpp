@@ -1,16 +1,22 @@
 #include "diagnostics/motion_probe_format.hpp"
-
-#include <array>
-#include <charconv>
+#include "diagnostics/number_format.hpp"
 
 namespace neuralfx::diagnostics {
 namespace {
 using temporal::TemporalStatus;
 
-std::string decimal(float value) {
-    std::array<char, 32> buffer{};
-    auto result = std::to_chars(buffer.data(), buffer.data() + buffer.size(), value);
-    return std::string(buffer.data(), result.ptr);
+std::string position(temporal::Position value) {
+    return fixed(value.x) + "," + fixed(value.y) + "," + fixed(value.z);
+}
+
+const char* fault_name(temporal::CameraFault fault) {
+    switch (fault) {
+    case temporal::CameraFault::EmptySize: return "empty-size";
+    case temporal::CameraFault::SingularView: return "singular-view";
+    case temporal::CameraFault::NotPerspective: return "not-perspective";
+    case temporal::CameraFault::JitterOutOfRange: return "jitter-out-of-range";
+    }
+    return "unknown";
 }
 
 const char* status_name(TemporalStatus status) {
@@ -18,6 +24,7 @@ const char* status_name(TemporalStatus status) {
     case TemporalStatus::Ready: return "ready";
     case TemporalStatus::FirstFrame: return "first-frame";
     case TemporalStatus::Resized: return "resized";
+    case TemporalStatus::CameraCut: return "camera-cut";
     case TemporalStatus::NoScene: return "no-scene";
     case TemporalStatus::NoCamera: return "no-camera";
     case TemporalStatus::NoJitter: return "no-jitter";
@@ -44,5 +51,22 @@ std::string motion_line(std::uint64_t frame, const temporal::TemporalDecision& d
     if (decision.sync)
         line += std::string(" sync=") + sync_name(decision.sync->result) + "@" + std::to_string(decision.sync->frame);
     return line + " cpu_us=" + std::to_string(cpu_us);
+}
+}
+
+namespace neuralfx::diagnostics {
+std::string rejection_line(const temporal::RejectedCamera& rejected) {
+    const auto& rejection = rejected.rejection;
+    std::string line = "Motion camera rejected frame=" + std::to_string(rejected.frame) + " reason=" +
+        fault_name(rejection.fault);
+    if (rejection.fault == temporal::CameraFault::SingularView) return line;
+    const auto& p = rejection.projection;
+    return line + " row3=" + decimal(p[12]) + "," + decimal(p[13]) + "," + decimal(p[14]) + "," + decimal(p[15]) +
+        " offsets=" + decimal(p[2]) + "," + decimal(p[6]);
+}
+
+std::string jump_line(const temporal::CameraStep& step) {
+    return "Motion camera jump frame=" + std::to_string(step.frame) + " move_m=" + fixed(step.distance_m) +
+        " turn_deg=" + fixed(step.angle_deg) + " from=" + position(step.from) + " to=" + position(step.to);
 }
 }

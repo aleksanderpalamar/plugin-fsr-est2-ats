@@ -68,8 +68,8 @@ bool CameraCapture::capture(ID3D11DeviceContext* context, std::uint64_t frame) n
     return true;
 }
 
-std::optional<CameraObservation> CameraCapture::collect(ID3D11DeviceContext* context) noexcept {
-    std::optional<CameraObservation> latest;
+std::vector<CameraObservation> CameraCapture::collect(ID3D11DeviceContext* context) noexcept {
+    std::vector<CameraObservation> completed;
     while (auto* slot = oldest()) {
         D3D11_MAPPED_SUBRESOURCE mapped{};
         HRESULT result = context->Map(slot->staging.Get(), 0, D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, &mapped);
@@ -77,10 +77,15 @@ std::optional<CameraObservation> CameraCapture::collect(ID3D11DeviceContext* con
         auto frame = *slot->frame;
         slot->frame.reset();
         if (FAILED(result)) continue;
-        latest = CameraObservation{frame, matrices_of(mapped.pData)};
+        auto matrices = matrices_of(mapped.pData);
         context->Unmap(slot->staging.Get(), 0);
+        try {
+            completed.push_back({frame, matrices});
+        } catch (...) {
+            break;
+        }
     }
-    return latest;
+    return completed;
 }
 
 bool CameraCapture::prepare(ID3D11DeviceContext* context, Pending& slot) noexcept {

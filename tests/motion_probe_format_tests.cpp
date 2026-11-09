@@ -35,7 +35,7 @@ int names_case() {
     using temporal::TemporalStatus;
     for (auto [status, name] : {std::pair{TemporalStatus::FirstFrame, "first-frame"},
              std::pair{TemporalStatus::Resized, "resized"}, std::pair{TemporalStatus::NoCamera, "no-camera"},
-             std::pair{TemporalStatus::NoJitter, "no-jitter"}}) {
+             std::pair{TemporalStatus::NoJitter, "no-jitter"}, std::pair{TemporalStatus::CameraCut, "camera-cut"}}) {
         temporal::TemporalDecision decision;
         decision.status = status;
         decision.sync = temporal::SyncReport{4, temporal::SyncResult::Resynced};
@@ -44,10 +44,34 @@ int names_case() {
     }
     return 0;
 }
+
+int rejection_case() {
+    temporal::Matrix4 projection{};
+    projection[2] = 0.00065f;
+    projection[6] = -0.00078f;
+    projection[15] = 1.0f;
+    temporal::RejectedCamera rejected{7, {temporal::CameraFault::NotPerspective, projection}};
+    if (int code = expect(diagnostics::rejection_line(rejected),
+        "Motion camera rejected frame=7 reason=not-perspective row3=0,0,0,1 offsets=0.00065,-0.00078", 50))
+        return code;
+    rejected.rejection = {temporal::CameraFault::SingularView, {}};
+    if (int code = expect(diagnostics::rejection_line(rejected),
+        "Motion camera rejected frame=7 reason=singular-view", 51)) return code;
+    rejected.rejection.fault = temporal::CameraFault::JitterOutOfRange;
+    if (diagnostics::rejection_line(rejected).find("reason=jitter-out-of-range") == std::string::npos) return 52;
+    rejected.rejection.fault = temporal::CameraFault::EmptySize;
+    return diagnostics::rejection_line(rejected).find("reason=empty-size") == std::string::npos ? 53 : 0;
+}
+
+int jump_case() {
+    temporal::CameraStep step{12, 12.345f, 0.5f, {1.0f, 2.0f, -3.5f}, {13.25f, 2.0f, -3.5f}};
+    return expect(diagnostics::jump_line(step),
+        "Motion camera jump frame=12 move_m=12.35 turn_deg=0.50 from=1.00,2.00,-3.50 to=13.25,2.00,-3.50", 60);
+}
 }
 
 int main() {
-    for (auto test_case : {ready_case, missing_case, names_case}) {
+    for (auto test_case : {ready_case, missing_case, names_case, rejection_case, jump_case}) {
         if (int code = test_case(); code != 0) return code;
     }
     return 0;

@@ -54,12 +54,14 @@ int observe(Device& gpu, const Targets& targets, ID3D11Texture2D* backbuffer) {
         game_frame(gpu, targets, true);
         gpu.context->Flush();
         auto sample = tracker.finish_frame(gpu.context.Get());
-        if (!sample.observation) {
+        if (sample.observations.empty()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(2));
             continue;
         }
-        if (sample.observation->frame > sample.index) return 40;
-        return holds_values(sample.observation->matrices) ? 0 : 41;
+        for (size_t index = 1; index < sample.observations.size(); ++index)
+            if (sample.observations[index].frame <= sample.observations[index - 1].frame) return 43;
+        if (sample.observations.back().frame > sample.index) return 40;
+        return holds_values(sample.observations.back().matrices) ? 0 : 41;
     }
     return 42;
 }

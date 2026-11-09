@@ -6,6 +6,7 @@
 #include <array>
 #include <cstdint>
 #include <optional>
+#include <vector>
 #include <wrl/client.h>
 
 namespace neuralfx::temporal {
@@ -13,7 +14,7 @@ class CameraCapture {
 public:
     bool capture(ID3D11DeviceContext* context, std::uint64_t frame) noexcept;
     Microsoft::WRL::ComPtr<ID3D11Buffer> camera() const noexcept { return camera_; }
-    std::optional<CameraObservation> collect(ID3D11DeviceContext* context) noexcept;
+    std::vector<CameraObservation> collect(ID3D11DeviceContext* context) noexcept;
 
 private:
     struct Pending {

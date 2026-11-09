@@ -7,12 +7,12 @@
 #include "renderer/camera_reprojection_pass.hpp"
 #include "renderer/context_state.hpp"
 #include "renderer/motion_overlay_pass.hpp"
+#include "temporal/observation_review.hpp"
 #include "temporal/scene_tracker.hpp"
 #include "common/logger.hpp"
 
 #include <d3d11.h>
 #include <chrono>
-#include <cmath>
 #include <wrl/client.h>
 
 namespace neuralfx::diagnostics {
@@ -21,12 +21,15 @@ using Microsoft::WRL::ComPtr;
 using Clock = std::chrono::steady_clock;
 
 constexpr std::uint64_t logged_frames = 240;
+constexpr std::uint64_t logged_events = 100;
 constexpr float overlay_scale = 0.05f;
 
 struct Probe {
     bool enabled = false;
     bool ready = false;
     std::uint64_t frame = 0;
+    std::uint64_t events = 0;
+    temporal::ObservationReview review;
     temporal::TemporalHistory history;
     MotionTally tally;
     CameraReprojectionPass reprojection;
@@ -63,8 +66,10 @@ bool initialize(Probe& state, ID3D11Device* device) noexcept {
 void toggle(Probe& state, const Swapchain& target) noexcept {
     state.enabled = !state.enabled;
     state.history.reset();
+    state.review.reset();
     state.tally = {};
     state.frame = 0;
+    state.events = 0;
     if (state.enabled && !temporal::install_scene_hooks(target.context.Get())) {
         log("Motion probe draw hooks unavailable");
         state.enabled = false;
@@ -75,17 +80,15 @@ void toggle(Probe& state, const Swapchain& target) noexcept {
     log(state.enabled ? "Motion probe enabled" : "Motion probe disabled");
 }
 
-std::optional<temporal::JitterObservation> observed_jitter(const temporal::SceneSample& sample) {
-    if (!sample.observation || !sample.frame.render) return std::nullopt;
-    auto camera = temporal::camera_state(sample.observation->matrices, *sample.frame.render);
-    if (!camera) return std::nullopt;
-    return temporal::JitterObservation{sample.observation->frame, camera->jitter};
+temporal::ObservationReport review(Probe& state, const temporal::SceneSample& sample) noexcept {
+    if (!sample.frame.render) return {};
+    return state.review.review(sample.observations, *sample.frame.render);
 }
 
-std::optional<float> camera_distance(const temporal::SceneSample& sample) {
-    if (!sample.observation) return std::nullopt;
-    const auto& view = sample.observation->matrices.view;
-    return std::sqrt(view[3] * view[3] + view[7] * view[7] + view[11] * view[11]);
+void log_event(Probe& state, const std::string& line) {
+    if (state.events >= logged_events) return;
+    ++state.events;
+    log(line);
 }
 
 void draw_overlay(Probe& state, const Swapchain& target, const temporal::SceneSample& sample,
@@ -105,10 +108,13 @@ void draw_overlay(Probe& state, const Swapchain& target, const temporal::SceneSa
 }
 
 void record(Probe& state, const temporal::TemporalDecision& decision, const temporal::SceneSample& sample,
-    std::int64_t cpu_us) {
+    const temporal::ObservationReport& report, std::int64_t cpu_us) {
     if (state.frame < logged_frames) log(motion_line(sample.index, decision, sample.frame.render, cpu_us));
     ++state.frame;
-    state.tally.add(decision, cpu_us, camera_distance(sample));
+    for (const auto& rejected : report.rejections) log_event(state, rejection_line(rejected));
+    for (const auto& step : report.steps)
+        if (temporal::is_jump(step)) log_event(state, jump_line(step));
+    state.tally.add(decision, cpu_us, report);
     if (state.tally.frames < logged_frames) return;
     log(tally_line(state.tally));
     state.tally = {};
@@ -117,10 +123,11 @@ void record(Probe& state, const temporal::TemporalDecision& decision, const temp
 void inspect(Probe& state, const Swapchain& target) {
     auto start = Clock::now();
     auto sample = temporal::scene_tracker().finish_frame(target.context.Get());
+    auto report = review(state, sample);
     auto decision = state.history.advance({sample.index, sample.frame.render, sample.camera != nullptr,
-        sample.frame.temporal_resolve, observed_jitter(sample)});
+        sample.frame.temporal_resolve, report.jitters, report.jump});
     auto cpu_us = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - start).count();
-    record(state, decision, sample, cpu_us);
+    record(state, decision, sample, report, cpu_us);
     if (!state.ready || !decision.jitter || !sample.camera || !sample.depth) return;
     draw_overlay(state, target, sample, *sample.frame.render, decision.status == temporal::TemporalStatus::Ready);
 }

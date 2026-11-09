@@ -2,7 +2,8 @@ add_library(neuralfx_temporal STATIC src/temporal/projection_jitter.cpp
     src/temporal/matrix4.cpp src/temporal/camera_state.cpp
     src/temporal/motion_reprojection.cpp src/temporal/scene_recognizer.cpp
     src/temporal/temporal_history.cpp src/temporal/jitter_sequence.cpp
-    src/temporal/jitter_tracker.cpp)
+    src/temporal/jitter_tracker.cpp src/temporal/camera_continuity.cpp
+    src/temporal/observation_review.cpp)
 target_compile_features(neuralfx_temporal PUBLIC cxx_std_20)
 target_include_directories(neuralfx_temporal PUBLIC src)
 add_executable(neuralfx_projection_jitter_tests tests/projection_jitter_tests.cpp)
@@ -21,7 +22,7 @@ add_executable(neuralfx_temporal_history_tests tests/temporal_history_tests.cpp)
 target_link_libraries(neuralfx_temporal_history_tests PRIVATE neuralfx_temporal)
 add_test(NAME neuralfx_temporal_history_tests COMMAND neuralfx_temporal_history_tests)
 add_library(neuralfx_motion_probe_format STATIC src/diagnostics/motion_probe_format.cpp
-    src/diagnostics/motion_tally.cpp)
+    src/diagnostics/motion_tally.cpp src/diagnostics/number_format.cpp)
 target_link_libraries(neuralfx_motion_probe_format PUBLIC neuralfx_temporal)
 add_executable(neuralfx_motion_probe_format_tests tests/motion_probe_format_tests.cpp)
 target_link_libraries(neuralfx_motion_probe_format_tests PRIVATE neuralfx_motion_probe_format)
@@ -35,3 +36,9 @@ add_test(NAME neuralfx_jitter_tracker_tests COMMAND neuralfx_jitter_tracker_test
 add_executable(neuralfx_motion_tally_tests tests/motion_tally_tests.cpp)
 target_link_libraries(neuralfx_motion_tally_tests PRIVATE neuralfx_motion_probe_format)
 add_test(NAME neuralfx_motion_tally_tests COMMAND neuralfx_motion_tally_tests)
+add_executable(neuralfx_camera_continuity_tests tests/camera_continuity_tests.cpp)
+target_link_libraries(neuralfx_camera_continuity_tests PRIVATE neuralfx_temporal)
+add_test(NAME neuralfx_camera_continuity_tests COMMAND neuralfx_camera_continuity_tests)
+add_executable(neuralfx_observation_review_tests tests/observation_review_tests.cpp)
+target_link_libraries(neuralfx_observation_review_tests PRIVATE neuralfx_temporal)
+add_test(NAME neuralfx_observation_review_tests COMMAND neuralfx_observation_review_tests)

@@ -1,6 +1,7 @@
 add_library(neuralfx_temporal STATIC src/temporal/projection_jitter.cpp
     src/temporal/matrix4.cpp src/temporal/camera_state.cpp
-    src/temporal/motion_reprojection.cpp src/temporal/scene_recognizer.cpp)
+    src/temporal/motion_reprojection.cpp src/temporal/scene_recognizer.cpp
+    src/temporal/temporal_history.cpp)
 target_compile_features(neuralfx_temporal PUBLIC cxx_std_20)
 target_include_directories(neuralfx_temporal PUBLIC src)
 add_executable(neuralfx_projection_jitter_tests tests/projection_jitter_tests.cpp)
@@ -15,3 +16,6 @@ add_test(NAME neuralfx_motion_reprojection_tests COMMAND neuralfx_motion_reproje
 add_executable(neuralfx_scene_recognizer_tests tests/scene_recognizer_tests.cpp)
 target_link_libraries(neuralfx_scene_recognizer_tests PRIVATE neuralfx_temporal)
 add_test(NAME neuralfx_scene_recognizer_tests COMMAND neuralfx_scene_recognizer_tests)
+add_executable(neuralfx_temporal_history_tests tests/temporal_history_tests.cpp)
+target_link_libraries(neuralfx_temporal_history_tests PRIVATE neuralfx_temporal)
+add_test(NAME neuralfx_temporal_history_tests COMMAND neuralfx_temporal_history_tests)

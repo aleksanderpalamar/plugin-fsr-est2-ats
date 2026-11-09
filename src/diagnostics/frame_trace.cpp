@@ -131,8 +131,7 @@ bool FrameTrace::wants_draw_detail() const noexcept {
 
 bool FrameTrace::wants_constants() const noexcept {
     const auto* pass = current_pass();
-    if (!pass || !pass->depth || pass->draws > 0) return false;
-    return pass->depth->width == backbuffer_.width && pass->depth->height == backbuffer_.height;
+    return pass && pass->depth && pass->draws == 0;
 }
 
 void FrameTrace::detail(DrawDetail detail) {

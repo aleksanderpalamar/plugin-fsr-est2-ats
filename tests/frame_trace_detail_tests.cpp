@@ -49,7 +49,11 @@ int constants_case() {
     FrameTrace trace(16);
     trace.begin(backbuffer);
     trace.bind({}, shadow);
-    if (trace.wants_constants()) return 20;
+    if (!trace.wants_constants()) return 20;
+    trace.draw();
+    std::array color_only{scene};
+    trace.bind(color_only, std::nullopt);
+    if (trace.wants_constants()) return 24;
     trace.draw();
     std::array scene_targets{scene};
     trace.bind(scene_targets, depth);
@@ -61,14 +65,15 @@ int constants_case() {
     return expect(trace.lines(), {
         "Trace frame begin backbuffer=bb 1920x1080 fmt=28 samples=1",
         "Trace 0 pass ds=400 draws=1",
-        "Trace 1 pass rt=200 ds=300 draws=1",
-        "Trace 2 constants vs slot=0 buffer=c0 offset=256 size=64 values=1,-0.5,0.25",
-        "Trace 3 constants vs slot=2 buffer=c2 offset=0 size=32 values=unknown",
+        "Trace 1 pass rt=200 draws=1",
+        "Trace 2 pass rt=200 ds=300 draws=1",
+        "Trace 3 constants vs slot=0 buffer=c0 offset=256 size=64 values=1,-0.5,0.25",
+        "Trace 4 constants vs slot=2 buffer=c2 offset=0 size=32 values=unknown",
         "Trace target bb 1920x1080 fmt=28 samples=1 color writes=0 reads=0",
-        "Trace target 200 1920x1080 fmt=29 samples=1 color writes=1 reads=0",
+        "Trace target 200 1920x1080 fmt=29 samples=1 color writes=2 reads=0",
         "Trace target 300 1920x1080 fmt=20 samples=1 depth writes=1 reads=0",
         "Trace target 400 2048x2048 fmt=55 samples=1 depth writes=1 reads=0",
-        "Trace frame end entries=4 draws=2 dropped=0"}, 23);
+        "Trace frame end entries=5 draws=3 dropped=0"}, 23);
 }
 
 int detail_limit_case() {

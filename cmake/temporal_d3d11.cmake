@@ -49,3 +49,30 @@ target_include_directories(neuralfx_motion_overlay_pass_tests PRIVATE src)
 target_link_libraries(neuralfx_motion_overlay_pass_tests PRIVATE d3d11 ${D3DCOMPILER_LIBRARY})
 add_dependencies(neuralfx_motion_overlay_pass_tests neuralfx_runtime_assets)
 add_test(NAME neuralfx_motion_overlay_pass_tests COMMAND neuralfx_motion_overlay_pass_tests)
+
+set(NEURALFX_MOTION_PROBE_SOURCES
+    src/diagnostics/motion_probe.cpp
+    src/diagnostics/motion_probe_targets.cpp
+    src/renderer/camera_motion_pass.cpp
+    src/renderer/motion_overlay_pass.cpp
+)
+target_sources(dxgi PRIVATE ${NEURALFX_MOTION_PROBE_SOURCES})
+target_link_libraries(dxgi PRIVATE neuralfx_motion_probe_format)
+
+add_executable(neuralfx_motion_probe_tests
+    tests/motion_probe_tests.cpp
+    ${NEURALFX_MOTION_PROBE_SOURCES}
+    src/dxgi/context_hook.cpp
+    src/dxgi/depth_capture.cpp
+    src/renderer/depth_format.cpp
+    src/renderer/context_state.cpp
+    src/renderer/fullscreen_draw.cpp
+    src/gpu/shader_compiler.cpp
+    src/common/logger.cpp
+)
+target_compile_definitions(neuralfx_motion_probe_tests PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_include_directories(neuralfx_motion_probe_tests PRIVATE src)
+target_link_libraries(neuralfx_motion_probe_tests PRIVATE neuralfx_temporal_d3d11 neuralfx_trace_d3d11
+    neuralfx_motion_probe_format ${D3DCOMPILER_LIBRARY} user32)
+add_dependencies(neuralfx_motion_probe_tests neuralfx_runtime_assets)
+add_test(NAME neuralfx_motion_probe_tests COMMAND neuralfx_motion_probe_tests)

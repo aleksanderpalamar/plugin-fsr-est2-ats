@@ -115,6 +115,14 @@ Passes that write `bb` also list each draw (`draw`, with the vertex or index cou
 
 The draw, copy, clear, viewport, pixel-shader, and shader-resource hooks are installed only after the first capture request. Each frame keeps at most 4096 entries; the `dropped=` count reports any excess. Compute dispatches, pixel-shader constant buffers, and deferred contexts are not traced.
 
+## Motion vector diagnostics
+
+The motion probe checks the temporal inputs that an upscaler needs, without changing the game image except for a debug inset. Create an empty file named `motion-debug` in the `NeuralFX` folder while the game is running; within one second the plugin deletes it and logs `Motion probe enabled`. Create the file again to turn the probe off.
+
+While enabled, the plugin recognizes the scene passes by their render targets: the geometry pass (four or more color targets sharing the size of its depth target, which gives the render resolution), the lighting pass (two color targets on that depth), and the game's temporal anti-aliasing resolve (two color targets at the render resolution without depth). At the first lighting draw it copies 32 floats from the vertex constant buffer in slot 0, the camera view and the jittered view-projection, and reads them back at `Present`. From these it derives the projection, the subpixel jitter, and the view-projection without jitter, then reconstructs camera motion vectors from the scene depth, in render pixels from the current to the previous position.
+
+The top-left quarter of the screen shows the motion vectors: gray means no motion, more red means motion to the right, more green means motion downward. The first 240 frames after enabling are logged as `Motion frame N status=... render=WxH jitter=x,y wait_us=...`. `ready` frames have valid motion vectors; `first-frame` and `resized` restart the history; `no-jitter` means the game's temporal anti-aliasing is off, so frames carry no jitter; `no-scene` and `no-camera` mean the passes or the camera constants were not recognized. `wait_us` is the time `Present` waited for the camera readback. The motion vectors describe only camera movement; vehicles and other objects that move on their own are not represented.
+
 ## Verified scope and limitations
 
 - The plugin reads the already composed backbuffer, so post-processing also affects the HUD. The code accepts only 8-bit RGBA/BGRA backbuffer formats. For `_SRGB` formats, the SRV decodes and the RTV encodes sRGB in hardware. For `_UNORM` formats, the shader assumes sRGB-encoded SDR values, decodes them for grading, and writes encoded values after RCAS. The actual ETS2 color space still needs validation through a frame capture.

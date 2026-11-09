@@ -209,6 +209,7 @@ add_custom_target(neuralfx_runtime_assets ALL
 add_dependencies(neuralfx_shader_compile_tests neuralfx_runtime_assets)
 add_dependencies(neuralfx_screen_space_pass_tests neuralfx_runtime_assets)
 add_dependencies(neuralfx_raytracing_gpu_tests neuralfx_runtime_assets)
+include(cmake/temporal_d3d11.cmake)
 
 set(NEURALFX_PACKAGE_VERSION "$ENV{NEURALFX_PACKAGE_VERSION}")
 if(NEURALFX_PACKAGE_VERSION STREQUAL "")

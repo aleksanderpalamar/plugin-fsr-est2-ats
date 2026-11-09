@@ -2,12 +2,17 @@
 #include "diagnostics/motion_probe.hpp"
 #include "dxgi/context_hook.hpp"
 #include "scene_frame_fixture.hpp"
+#include "temporal/camera_state.hpp"
+#include "temporal/jitter_sequence.hpp"
 
 #include <cstdlib>
 #include <fstream>
+#include <sstream>
+#include <thread>
 
 using namespace scene_test;
 namespace diagnostics = neuralfx::diagnostics;
+namespace temporal = neuralfx::temporal;
 
 namespace {
 constexpr CameraValues captured_camera{-0.47095215f, 0.0f, -0.8821588f, -46.862404f,
@@ -19,17 +24,61 @@ constexpr CameraValues captured_camera{-0.47095215f, 0.0f, -0.8821588f, -46.8624
     0.00011026186f, 0.0f, -5.8864753e-05f, 0.19390413f,
     -0.8821588f, 0.0f, 0.47095215f, 48.97045f};
 
+std::filesystem::path log_file() {
+    return neuralfx::module_directory() / L"NeuralFX" / L"logs" / L"neuralfx.log";
+}
+
+std::uintmax_t log_size() {
+    std::error_code error;
+    auto size = std::filesystem::file_size(log_file(), error);
+    return error ? 0 : size;
+}
+
+std::string log_since(std::uintmax_t offset) {
+    std::ifstream file(log_file(), std::ios::binary);
+    file.seekg(static_cast<std::streamoff>(offset));
+    std::stringstream content;
+    content << file.rdbuf();
+    return content.str();
+}
+
+CameraValues camera_for(std::uint32_t phase) {
+    temporal::Matrix4 view;
+    temporal::Matrix4 view_projection;
+    std::copy(captured_camera.begin(), captured_camera.begin() + 16, view.begin());
+    std::copy(captured_camera.begin() + 16, captured_camera.end(), view_projection.begin());
+    temporal::RenderSize size{render_width, render_height};
+    auto projection = temporal::camera_state({view, view_projection}, size)->projection;
+    auto jitter = temporal::sequence_jitter(phase);
+    projection[2] = -jitter.x * 2.0f / static_cast<float>(render_width);
+    projection[6] = jitter.y * 2.0f / static_cast<float>(render_height);
+    auto jittered = temporal::multiply(projection, view);
+    CameraValues values{};
+    std::copy(view.begin(), view.end(), values.begin());
+    std::copy(jittered.begin(), jittered.end(), values.begin() + 16);
+    return values;
+}
+
+void upload_camera(Device& gpu, const Targets& targets, std::uint32_t phase) {
+    auto values = camera_for(phase);
+    D3D11_BOX box{camera_offset * 16, 0, 0, camera_offset * 16 + static_cast<UINT>(sizeof(values)), 1, 1};
+    gpu.context->UpdateSubresource(targets.camera.Get(), 0, &box, values.data(), 0, 0);
+}
+
 void request_toggle() {
     std::ofstream(neuralfx::module_directory() / L"NeuralFX" / L"motion-debug").put('\n');
 }
 
-void present(Device& gpu, const Targets& targets, ID3D11RenderTargetView* output) {
+void present(Device& gpu, const Targets& targets, ID3D11RenderTargetView* output, std::uint32_t phase) {
     const float black[4]{0.0f, 0.0f, 0.0f, 1.0f};
+    upload_camera(gpu, targets, phase);
     gpu.context->ClearRenderTargetView(output, black);
     gpu.context->ClearDepthStencilView(targets.depth_view.Get(), D3D11_CLEAR_DEPTH, 0.5f, 0);
     game_frame(gpu, targets, true);
     diagnostics::present_motion_probe(gpu.swapchain.Get());
     diagnostics::motion_probe_frame_end(gpu.swapchain.Get());
+    gpu.context->Flush();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
 }
 
 std::optional<std::array<std::uint8_t, 4>> pixel(Device& gpu, ID3D11Texture2D* texture, UINT x, UINT y) {
@@ -77,11 +126,15 @@ int main() {
     ComPtr<ID3D11RenderTargetView> output;
     gpu.swapchain->GetBuffer(0, IID_PPV_ARGS(&backbuffer));
     if (FAILED(gpu.device->CreateRenderTargetView(backbuffer.Get(), nullptr, &output))) return 3;
+    auto offset = log_size();
     request_toggle();
     diagnostics::motion_probe_frame_end(gpu.swapchain.Get());
-    present(gpu, targets, output.Get());
-    present(gpu, targets, output.Get());
+    for (std::uint32_t phase = 3; phase < 3 + 12; ++phase) present(gpu, targets, output.Get(), phase);
     int result = check(gpu, backbuffer.Get());
+    auto log = log_since(offset);
+    if (result == 0 && log.find("status=ready") == std::string::npos) result = 30;
+    if (result == 0 && log.find("sync=confirmed@") == std::string::npos) result = 31;
+    if (result == 0 && log.find("wait_us") != std::string::npos) result = 32;
     DestroyWindow(window);
     return result;
 }

@@ -1,6 +1,8 @@
 #include "common/logger.hpp"
 #include "d3d11_test_device.hpp"
+#include "renderer/camera_frame.hpp"
 #include "renderer/camera_motion_pass.hpp"
+#include "temporal/motion_reprojection.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -38,19 +40,34 @@ std::vector<float> scene_depth() {
     return depth;
 }
 
-int compare(const TestDevice& gpu, CameraMotionPass& pass, const MotionConstants& constants, int code) {
+ComPtr<ID3D11ShaderResourceView> camera_frame(ID3D11Device* device, const MotionConstants& constants,
+    std::uint32_t valid) {
+    GpuCameraFrame frame{constants.reprojection, {}, {}, {constants.jitter.x, constants.jitter.y}, valid, 0};
+    D3D11_BUFFER_DESC description{sizeof(frame), D3D11_USAGE_DEFAULT, D3D11_BIND_SHADER_RESOURCE, 0,
+        D3D11_RESOURCE_MISC_BUFFER_STRUCTURED, sizeof(frame)};
+    D3D11_SUBRESOURCE_DATA data{&frame, 0, 0};
+    ComPtr<ID3D11Buffer> buffer;
+    ComPtr<ID3D11ShaderResourceView> view;
+    if (FAILED(device->CreateBuffer(&description, &data, &buffer))) return nullptr;
+    if (FAILED(device->CreateShaderResourceView(buffer.Get(), nullptr, &view))) return nullptr;
+    return view;
+}
+
+int compare(const TestDevice& gpu, CameraMotionPass& pass, const MotionConstants& constants, int code,
+    std::uint32_t valid = 1) {
     auto depth = scene_depth();
     auto input = create_input(gpu.device.Get(), width, height, DXGI_FORMAT_R32_FLOAT, depth.data(),
         width * sizeof(float));
     auto target = create_float_target(gpu.device.Get(), width, height);
-    if (!input || !target) return code;
-    pass.render(gpu.context.Get(), {input.Get(), target->view.Get()}, constants);
+    auto camera = camera_frame(gpu.device.Get(), constants, valid);
+    if (!input || !target || !camera) return code;
+    pass.render(gpu.context.Get(), {input.Get(), camera.Get(), target->view.Get()}, size);
     auto pixels = read_pixels(gpu, target->texture.Get(), width, height);
     if (!pixels) return code + 1;
     for (UINT y = 0; y < height; ++y) {
         for (UINT x = 0; x < width; ++x) {
             size_t index = static_cast<size_t>(y) * width + x;
-            auto expected = camera_motion(constants, x + 0.5f, y + 0.5f, depth[index]);
+            auto expected = valid ? camera_motion(constants, x + 0.5f, y + 0.5f, depth[index]) : std::nullopt;
             PixelMotion wanted = expected.value_or(PixelMotion{});
             const auto& actual = (*pixels)[index];
             if (std::fabs(actual[0] - wanted.x) > 1e-2f || std::fabs(actual[1] - wanted.y) > 1e-2f) {
@@ -70,7 +87,8 @@ int run_cases(const TestDevice& gpu, CameraMotionPass& pass) {
         camera(translation(0.5f, 0.2f, -1.5f), {-0.47f, -0.42f}), size);
     if (!still || !moving) return 10;
     if (int code = compare(gpu, pass, *still, 20)) return code;
-    return compare(gpu, pass, *moving, 30);
+    if (int code = compare(gpu, pass, *moving, 30)) return code;
+    return compare(gpu, pass, *moving, 40, 0);
 }
 }
 

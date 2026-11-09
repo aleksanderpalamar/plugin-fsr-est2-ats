@@ -1,6 +1,6 @@
 #pragma once
 
-#include "temporal/camera_readback.hpp"
+#include "temporal/camera_capture.hpp"
 #include "temporal/scene_recognizer.hpp"
 
 #include <d3d11.h>
@@ -10,9 +10,11 @@
 
 namespace neuralfx::temporal {
 struct SceneSample {
+    std::uint64_t index = 0;
     SceneFrame frame;
-    std::optional<CameraMatrices> camera;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> camera;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> depth;
+    std::optional<CameraObservation> observation;
 };
 
 class SceneTracker {
@@ -28,8 +30,10 @@ private:
     std::mutex mutex_;
     std::atomic_bool active_{false};
     bool recording_ = false;
+    bool captured_ = false;
+    std::uint64_t index_ = 0;
     SceneRecognizer recognizer_;
-    CameraReadback camera_;
+    CameraCapture camera_;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> depth_;
 };
 

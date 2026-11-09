@@ -7,25 +7,22 @@ using namespace neuralfx::temporal;
 namespace {
 constexpr RenderSize scene{1440, 1080};
 
-constexpr Matrix4 view{-0.47095215f, 0.0f, -0.8821588f, -46.862404f,
-    0.0f, 1.0f, 0.0f, 10.617724f,
-    0.8821588f, 0.0f, -0.47095215f, -48.97045f,
-    0.0f, 0.0f, 0.0f, 1.0f};
+FrameInput frame(std::uint64_t index, std::optional<JitterObservation> observation = std::nullopt,
+    RenderSize size = scene) {
+    return {index, size, true, true, observation};
+}
 
-constexpr Matrix4 view_projection{-0.5872703f, 0.0f, -1.1014271f, -58.526123f,
-    -0.0006845583f, 2.2190397f, 0.0003654605f, 23.599154f,
-    0.00011026186f, 0.0f, -5.8864753e-05f, 0.19390413f,
-    -0.8821588f, 0.0f, 0.47095215f, 48.97045f};
-
-FrameInput valid(RenderSize size = scene) {
-    return {size, CameraMatrices{view, view_projection}, true};
+JitterObservation seen(std::uint64_t index, std::uint32_t phase) {
+    return {index, sequence_jitter(phase)};
 }
 
 int expect(TemporalHistory& history, const FrameInput& input, TemporalStatus status, int code) {
     auto decision = history.advance(input);
     if (decision.status != status) return code;
-    bool has_motion = decision.motion.has_value();
-    return has_motion == (status == TemporalStatus::Ready) ? 0 : code + 1;
+    bool predicted = decision.jitter.has_value();
+    bool wanted = status == TemporalStatus::Ready || status == TemporalStatus::FirstFrame ||
+        status == TemporalStatus::Resized;
+    return predicted == wanted ? 0 : code + 1;
 }
 
 int sequence_case() {
@@ -35,16 +32,20 @@ int sequence_case() {
         TemporalStatus status;
     };
     std::vector<Step> steps{
-        {valid(), TemporalStatus::FirstFrame},
-        {valid(), TemporalStatus::Ready},
-        {{scene, CameraMatrices{view, view_projection}, false}, TemporalStatus::NoJitter},
-        {valid(), TemporalStatus::FirstFrame},
-        {{scene, std::nullopt, true}, TemporalStatus::NoCamera},
-        {valid(), TemporalStatus::FirstFrame},
-        {valid(RenderSize{1280, 720}), TemporalStatus::Resized},
-        {valid(RenderSize{1280, 720}), TemporalStatus::Ready},
-        {{std::nullopt, std::nullopt, false}, TemporalStatus::NoScene},
-        {valid(), TemporalStatus::FirstFrame},
+        {frame(0), TemporalStatus::Unsynced},
+        {frame(1), TemporalStatus::Unsynced},
+        {frame(2, seen(0, 7)), TemporalStatus::FirstFrame},
+        {frame(3, seen(1, 8)), TemporalStatus::Ready},
+        {{4, scene, true, false, std::nullopt}, TemporalStatus::NoJitter},
+        {frame(5), TemporalStatus::Unsynced},
+        {frame(6, seen(4, 0)), TemporalStatus::FirstFrame},
+        {{7, scene, false, true, std::nullopt}, TemporalStatus::NoCamera},
+        {frame(8), TemporalStatus::FirstFrame},
+        {frame(9, std::nullopt, RenderSize{1280, 720}), TemporalStatus::Resized},
+        {frame(10, std::nullopt, RenderSize{1280, 720}), TemporalStatus::Ready},
+        {{11, std::nullopt, false, false, std::nullopt}, TemporalStatus::NoScene},
+        {frame(12), TemporalStatus::FirstFrame},
+        {frame(13), TemporalStatus::Ready},
     };
     for (size_t index = 0; index < steps.size(); ++index)
         if (int code = expect(history, steps[index].input, steps[index].status, 10 + static_cast<int>(index) * 2))
@@ -52,21 +53,31 @@ int sequence_case() {
     return 0;
 }
 
-int invalid_camera_case() {
+int prediction_case() {
     TemporalHistory history;
-    if (int code = expect(history, valid(), TemporalStatus::FirstFrame, 40)) return code;
-    Matrix4 broken = view_projection;
-    broken[14] = 0.0f;
-    broken[15] = 1.0f;
-    if (int code = expect(history, {scene, CameraMatrices{view, broken}, true}, TemporalStatus::NoCamera, 42)) return code;
-    auto decision = history.advance(valid());
-    if (decision.status != TemporalStatus::FirstFrame || !decision.camera) return 44;
-    return decision.camera->jitter.x < -0.46f && decision.camera->jitter.x > -0.48f ? 0 : 45;
+    history.advance(frame(0));
+    auto decision = history.advance(frame(3, seen(1, 14)));
+    if (!decision.sync || decision.sync->frame != 1 || decision.sync->result != SyncResult::Resynced) return 50;
+    auto expected = sequence_jitter(0);
+    if (!decision.jitter || decision.jitter->x != expected.x || decision.jitter->y != expected.y) return 51;
+    decision = history.advance(frame(4, seen(2, 15)));
+    if (decision.status != TemporalStatus::Ready || decision.sync->result != SyncResult::Confirmed) return 52;
+    return history.advance(frame(5)).sync ? 53 : 0;
+}
+
+int resync_case() {
+    TemporalHistory history;
+    history.advance(frame(0, seen(0, 3)));
+    if (int code = expect(history, frame(1), TemporalStatus::Ready, 60)) return code;
+    if (int code = expect(history, frame(2, seen(1, 9)), TemporalStatus::FirstFrame, 62)) return code;
+    if (int code = expect(history, frame(3), TemporalStatus::Ready, 64)) return code;
+    if (int code = expect(history, frame(4, JitterObservation{3, Jitter{}}), TemporalStatus::Unsynced, 66)) return code;
+    return 0;
 }
 }
 
 int main() {
-    for (auto test_case : {sequence_case, invalid_camera_case}) {
+    for (auto test_case : {sequence_case, prediction_case, resync_case}) {
         if (int code = test_case(); code != 0) return code;
     }
     return 0;

@@ -5,21 +5,10 @@
 namespace neuralfx {
 namespace {
 struct MotionParameters {
-    temporal::Matrix4 reprojection;
-    float jitter[2];
     float size[2];
+    float padding[2];
 };
-static_assert(sizeof(MotionParameters) % 16 == 0);
-
-MotionParameters parameters_of(const temporal::MotionConstants& constants) {
-    MotionParameters parameters{};
-    parameters.reprojection = constants.reprojection;
-    parameters.jitter[0] = constants.jitter.x;
-    parameters.jitter[1] = constants.jitter.y;
-    parameters.size[0] = static_cast<float>(constants.size.width);
-    parameters.size[1] = static_cast<float>(constants.size.height);
-    return parameters;
-}
+static_assert(sizeof(MotionParameters) == 16);
 }
 
 HRESULT CameraMotionPass::initialize(ID3D11Device* device, const std::filesystem::path& shader_directory) {
@@ -37,12 +26,12 @@ HRESULT CameraMotionPass::initialize(ID3D11Device* device, const std::filesystem
 }
 
 void CameraMotionPass::render(ID3D11DeviceContext* context, const CameraMotionTargets& targets,
-    const temporal::MotionConstants& constants) noexcept {
-    if (!context || !pixel_ || !constants_ || !targets.depth || !targets.output) return;
-    MotionParameters parameters = parameters_of(constants);
+    temporal::RenderSize size) noexcept {
+    if (!context || !pixel_ || !constants_ || !targets.depth || !targets.camera || !targets.output) return;
+    MotionParameters parameters{{static_cast<float>(size.width), static_cast<float>(size.height)}, {}};
     context->UpdateSubresource(constants_.Get(), 0, nullptr, &parameters, 0, 0);
-    draw_fullscreen(context, {vertex_.Get(), pixel_.Get(), {targets.depth, nullptr, nullptr},
-        targets.output, constants_.Get(), nullptr, constants.size.width, constants.size.height});
+    draw_fullscreen(context, {vertex_.Get(), pixel_.Get(), {targets.depth, targets.camera, nullptr},
+        targets.output, constants_.Get(), nullptr, size.width, size.height});
 }
 
 void CameraMotionPass::reset() noexcept {

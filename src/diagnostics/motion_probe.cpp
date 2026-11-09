@@ -1,8 +1,10 @@
 #include "diagnostics/motion_probe.hpp"
 #include "diagnostics/motion_probe_format.hpp"
 #include "diagnostics/motion_probe_targets.hpp"
+#include "diagnostics/motion_tally.hpp"
 #include "diagnostics/trace_trigger.hpp"
 #include "renderer/camera_motion_pass.hpp"
+#include "renderer/camera_reprojection_pass.hpp"
 #include "renderer/context_state.hpp"
 #include "renderer/motion_overlay_pass.hpp"
 #include "temporal/scene_tracker.hpp"
@@ -10,6 +12,7 @@
 
 #include <d3d11.h>
 #include <chrono>
+#include <cmath>
 #include <wrl/client.h>
 
 namespace neuralfx::diagnostics {
@@ -25,6 +28,8 @@ struct Probe {
     bool ready = false;
     std::uint64_t frame = 0;
     temporal::TemporalHistory history;
+    MotionTally tally;
+    CameraReprojectionPass reprojection;
     CameraMotionPass motion;
     MotionOverlayPass overlay;
     MotionProbeTargets targets;
@@ -51,12 +56,14 @@ std::optional<Swapchain> swapchain_of(IDXGISwapChain* swapchain) noexcept {
 
 bool initialize(Probe& state, ID3D11Device* device) noexcept {
     auto shaders = module_directory() / L"NeuralFX" / L"shaders";
-    return SUCCEEDED(state.motion.initialize(device, shaders)) && SUCCEEDED(state.overlay.initialize(device, shaders));
+    return SUCCEEDED(state.reprojection.initialize(device, shaders)) &&
+        SUCCEEDED(state.motion.initialize(device, shaders)) && SUCCEEDED(state.overlay.initialize(device, shaders));
 }
 
 void toggle(Probe& state, const Swapchain& target) noexcept {
     state.enabled = !state.enabled;
     state.history.reset();
+    state.tally = {};
     state.frame = 0;
     if (state.enabled && !temporal::install_scene_hooks(target.context.Get())) {
         log("Motion probe draw hooks unavailable");
@@ -68,28 +75,54 @@ void toggle(Probe& state, const Swapchain& target) noexcept {
     log(state.enabled ? "Motion probe enabled" : "Motion probe disabled");
 }
 
+std::optional<temporal::JitterObservation> observed_jitter(const temporal::SceneSample& sample) {
+    if (!sample.observation || !sample.frame.render) return std::nullopt;
+    auto camera = temporal::camera_state(sample.observation->matrices, *sample.frame.render);
+    if (!camera) return std::nullopt;
+    return temporal::JitterObservation{sample.observation->frame, camera->jitter};
+}
+
+std::optional<float> camera_distance(const temporal::SceneSample& sample) {
+    if (!sample.observation) return std::nullopt;
+    const auto& view = sample.observation->matrices.view;
+    return std::sqrt(view[3] * view[3] + view[7] * view[7] + view[11] * view[11]);
+}
+
 void draw_overlay(Probe& state, const Swapchain& target, const temporal::SceneSample& sample,
-    const temporal::MotionConstants& motion) noexcept {
-    if (!state.targets.prepare(target.device.Get(), sample.depth.Get(), motion.size)) return;
+    temporal::RenderSize size, bool history_valid) noexcept {
+    if (!state.targets.prepare(target.device.Get(), sample.depth.Get(), size)) return;
     D3D11_TEXTURE2D_DESC description{};
     target.backbuffer->GetDesc(&description);
     ComPtr<ID3D11RenderTargetView> output;
     if (FAILED(target.device->CreateRenderTargetView(target.backbuffer.Get(), nullptr, &output))) return;
     ContextState saved(target.context.Get());
+    auto* camera = state.reprojection.run(target.context.Get(), sample.camera.Get(), size, history_valid);
+    if (!camera) return;
     state.targets.copy_depth(target.context.Get(), sample.depth.Get());
-    state.motion.render(target.context.Get(), {state.targets.depth(), state.targets.motion_target()}, motion);
+    state.motion.render(target.context.Get(), {state.targets.depth(), camera, state.targets.motion_target()}, size);
     state.overlay.render(target.context.Get(),
         {state.targets.motion(), output.Get(), description.Width / 2, description.Height / 2}, overlay_scale);
+}
+
+void record(Probe& state, const temporal::TemporalDecision& decision, const temporal::SceneSample& sample,
+    std::int64_t cpu_us) {
+    if (state.frame < logged_frames) log(motion_line(sample.index, decision, sample.frame.render, cpu_us));
+    ++state.frame;
+    state.tally.add(decision, cpu_us, camera_distance(sample));
+    if (state.tally.frames < logged_frames) return;
+    log(tally_line(state.tally));
+    state.tally = {};
 }
 
 void inspect(Probe& state, const Swapchain& target) {
     auto start = Clock::now();
     auto sample = temporal::scene_tracker().finish_frame(target.context.Get());
-    auto wait = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - start).count();
-    auto decision = state.history.advance({sample.frame.render, sample.camera, sample.frame.temporal_resolve});
-    if (state.frame < logged_frames) log(motion_line(state.frame, decision, sample.frame.render, wait));
-    ++state.frame;
-    if (state.ready && decision.motion && sample.depth) draw_overlay(state, target, sample, *decision.motion);
+    auto decision = state.history.advance({sample.index, sample.frame.render, sample.camera != nullptr,
+        sample.frame.temporal_resolve, observed_jitter(sample)});
+    auto cpu_us = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - start).count();
+    record(state, decision, sample, cpu_us);
+    if (!state.ready || !decision.jitter || !sample.camera || !sample.depth) return;
+    draw_overlay(state, target, sample, *sample.frame.render, decision.status == temporal::TemporalStatus::Ready);
 }
 }
 

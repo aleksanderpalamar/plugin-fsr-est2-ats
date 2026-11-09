@@ -8,5 +8,5 @@
 
 namespace neuralfx::diagnostics {
 std::string motion_line(std::uint64_t frame, const temporal::TemporalDecision& decision,
-    std::optional<temporal::RenderSize> render, std::int64_t wait_us);
+    std::optional<temporal::RenderSize> render, std::int64_t cpu_us);
 }

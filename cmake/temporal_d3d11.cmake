@@ -1,4 +1,4 @@
-add_library(neuralfx_temporal_d3d11 STATIC src/temporal/scene_tracker.cpp src/temporal/camera_readback.cpp
+add_library(neuralfx_temporal_d3d11 STATIC src/temporal/scene_tracker.cpp src/temporal/camera_capture.cpp
     src/temporal/scene_hooks.cpp)
 target_compile_features(neuralfx_temporal_d3d11 PUBLIC cxx_std_20)
 target_compile_definitions(neuralfx_temporal_d3d11 PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
@@ -21,6 +21,20 @@ target_include_directories(neuralfx_camera_motion_pass_tests PRIVATE src)
 target_link_libraries(neuralfx_camera_motion_pass_tests PRIVATE neuralfx_temporal d3d11 ${D3DCOMPILER_LIBRARY})
 add_dependencies(neuralfx_camera_motion_pass_tests neuralfx_runtime_assets)
 add_test(NAME neuralfx_camera_motion_pass_tests COMMAND neuralfx_camera_motion_pass_tests)
+
+add_executable(neuralfx_camera_reprojection_pass_tests
+    tests/camera_reprojection_pass_tests.cpp
+    src/renderer/camera_reprojection_pass.cpp
+    src/renderer/compute_state.cpp
+    src/gpu/shader_compiler.cpp
+    src/common/logger.cpp
+)
+target_compile_features(neuralfx_camera_reprojection_pass_tests PRIVATE cxx_std_20)
+target_compile_definitions(neuralfx_camera_reprojection_pass_tests PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_include_directories(neuralfx_camera_reprojection_pass_tests PRIVATE src)
+target_link_libraries(neuralfx_camera_reprojection_pass_tests PRIVATE neuralfx_temporal d3d11 ${D3DCOMPILER_LIBRARY})
+add_dependencies(neuralfx_camera_reprojection_pass_tests neuralfx_runtime_assets)
+add_test(NAME neuralfx_camera_reprojection_pass_tests COMMAND neuralfx_camera_reprojection_pass_tests)
 
 add_executable(neuralfx_scene_tracker_tests
     tests/scene_tracker_tests.cpp
@@ -53,6 +67,8 @@ add_test(NAME neuralfx_motion_overlay_pass_tests COMMAND neuralfx_motion_overlay
 set(NEURALFX_MOTION_PROBE_SOURCES
     src/diagnostics/motion_probe.cpp
     src/diagnostics/motion_probe_targets.cpp
+    src/renderer/camera_reprojection_pass.cpp
+    src/renderer/compute_state.cpp
     src/renderer/camera_motion_pass.cpp
     src/renderer/motion_overlay_pass.cpp
 )

@@ -51,7 +51,8 @@ void SceneTracker::start_frame(ID3D11Texture2D* backbuffer) noexcept {
     recording_ = active() && surface.has_value();
     if (!recording_) return;
     recognizer_.begin_frame(*surface);
-    camera_.clear();
+    ++index_;
+    captured_ = false;
     depth_.Reset();
 }
 
@@ -70,15 +71,15 @@ void SceneTracker::targets_bound(ID3D11DeviceContext* context) noexcept {
 void SceneTracker::draw(ID3D11DeviceContext* context) noexcept {
     if (!active()) return;
     std::lock_guard lock(mutex_);
-    if (recording_ && recognizer_.draw() == DrawAction::ReadCamera) camera_.request(context);
+    if (recording_ && recognizer_.draw() == DrawAction::ReadCamera) captured_ = camera_.capture(context, index_);
 }
 
 SceneSample SceneTracker::finish_frame(ID3D11DeviceContext* context) noexcept {
     std::lock_guard lock(mutex_);
     if (!recording_) return {};
     recording_ = false;
-    SceneSample sample{recognizer_.frame(), std::nullopt, depth_};
-    if (sample.frame.camera_requested) sample.camera = camera_.resolve(context);
+    SceneSample sample{index_, recognizer_.frame(), nullptr, depth_, camera_.collect(context)};
+    if (captured_) sample.camera = camera_.camera();
     return sample;
 }
 

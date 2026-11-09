@@ -23,7 +23,20 @@ struct TraceViewport {
     float height = 0.0f;
 };
 
-enum class EntryKind { Pass, InheritedPass, Copy, ClearColor, ClearDepth };
+enum class EntryKind { Pass, InheritedPass, Copy, ClearColor, ClearDepth, Draw, Constants };
+
+struct DrawDetail {
+    std::uint32_t count = 0;
+    std::uint64_t shader = 0;
+    std::vector<std::uint64_t> inputs;
+};
+
+struct ConstantSnapshot {
+    std::uint32_t slot = 0;
+    std::uint64_t buffer = 0;
+    std::uint32_t size = 0;
+    std::vector<float> values;
+};
 enum class Binding { Inherited, Recorded, Dropped };
 
 struct TraceEntry {
@@ -35,6 +48,8 @@ struct TraceEntry {
     std::uint64_t source = 0;
     std::uint64_t destination = 0;
     std::uint32_t draws = 0;
+    std::optional<DrawDetail> detail;
+    std::optional<ConstantSnapshot> constants;
 };
 
 struct TargetUsage {
@@ -46,16 +61,21 @@ struct TargetUsage {
 
 class FrameTrace {
 public:
-    explicit FrameTrace(std::size_t entry_limit) noexcept : entry_limit_(entry_limit) {}
+    explicit FrameTrace(std::size_t entry_limit, std::size_t detail_limit = 256) noexcept
+        : entry_limit_(entry_limit), detail_limit_(detail_limit) {}
 
     void begin(const TraceTarget& backbuffer);
     void bind(std::span<const TraceTarget> colors, const std::optional<TraceTarget>& depth);
     void viewport(const TraceViewport& viewport) noexcept;
     void draw();
-    void read(std::uint64_t id);
+    void read(const TraceTarget& target, TargetRole role);
     void copy(std::uint64_t source, const TraceTarget& destination);
     void clear_color(std::uint64_t id);
     void clear_depth(std::uint64_t id);
+    bool wants_draw_detail() const noexcept;
+    bool wants_constants() const noexcept;
+    void detail(DrawDetail detail);
+    void constants(ConstantSnapshot snapshot);
     std::vector<std::string> lines() const;
 
 private:
@@ -66,7 +86,11 @@ private:
     TargetUsage* usage(std::uint64_t id) noexcept;
     void record_write(const TraceTarget& target, TargetRole role);
 
+    const TraceEntry* current_pass() const noexcept;
+
     std::size_t entry_limit_;
+    std::size_t detail_limit_;
+    std::size_t details_ = 0;
     TraceTarget backbuffer_;
     std::vector<TraceEntry> entries_;
     std::vector<TargetUsage> targets_;

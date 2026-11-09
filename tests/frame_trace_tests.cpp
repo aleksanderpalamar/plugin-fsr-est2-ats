@@ -29,12 +29,11 @@ int composition_case() {
     trace.viewport({1280.0f, 720.0f});
     trace.draw();
     trace.draw();
-    trace.read(0x999);
     std::array output{backbuffer};
     trace.bind(output, std::nullopt);
     trace.viewport({1920.0f, 1080.0f});
-    trace.read(scene.id);
-    trace.read(scene.id);
+    trace.read(scene, TargetRole::Color);
+    trace.read(scene, TargetRole::Color);
     trace.draw();
     trace.draw();
     return expect(trace.lines(), {
@@ -71,7 +70,7 @@ int copy_case() {
     trace.copy(0x777, TraceTarget{0x778, 64, 64, 28, 1});
     std::array output{backbuffer};
     trace.bind(output, std::nullopt);
-    trace.read(history.id);
+    trace.read(history, TargetRole::Color);
     trace.draw();
     return expect(trace.lines(), {
         "Trace frame begin backbuffer=bb 1920x1080 fmt=28 samples=1",
@@ -101,6 +100,25 @@ int limit_case() {
         "Trace frame end entries=2 draws=4 dropped=2"}, 4);
 }
 
+int history_case() {
+    FrameTrace trace(16);
+    trace.begin(backbuffer);
+    constexpr TraceTarget previous{0x600, 1280, 720, 36, 1};
+    std::array targets{scene};
+    trace.bind(targets, depth);
+    trace.read(previous, TargetRole::Color);
+    trace.read(depth, TargetRole::Depth);
+    trace.draw();
+    return expect(trace.lines(), {
+        "Trace frame begin backbuffer=bb 1920x1080 fmt=28 samples=1",
+        "Trace 0 pass rt=200 ds=300 draws=1 reads=600,300",
+        "Trace target bb 1920x1080 fmt=28 samples=1 color writes=0 reads=0",
+        "Trace target 200 1280x720 fmt=10 samples=1 color writes=1 reads=0",
+        "Trace target 300 1280x720 fmt=40 samples=1 depth writes=1 reads=1",
+        "Trace target 600 1280x720 fmt=36 samples=1 color writes=0 reads=1",
+        "Trace frame end entries=1 draws=1 dropped=0"}, 6);
+}
+
 int restart_case() {
     FrameTrace trace(16);
     trace.begin(backbuffer);
@@ -116,7 +134,7 @@ int restart_case() {
 }
 
 int main() {
-    for (auto test_case : {composition_case, inherited_binding_case, copy_case, limit_case, restart_case}) {
+    for (auto test_case : {composition_case, inherited_binding_case, copy_case, limit_case, history_case, restart_case}) {
         if (int code = test_case(); code != 0) return code;
     }
     return 0;

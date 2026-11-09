@@ -1,6 +1,6 @@
 add_library(neuralfx_diagnostics STATIC src/diagnostics/frame_trace.cpp
     src/diagnostics/frame_trace_format.cpp src/diagnostics/trace_session.cpp
-    src/diagnostics/trace_trigger.cpp)
+    src/diagnostics/trace_trigger.cpp src/diagnostics/pipeline_state.cpp)
 target_compile_features(neuralfx_diagnostics PUBLIC cxx_std_20)
 target_include_directories(neuralfx_diagnostics PUBLIC src)
 add_executable(neuralfx_frame_trace_tests tests/frame_trace_tests.cpp)
@@ -12,3 +12,9 @@ add_test(NAME neuralfx_trace_session_tests COMMAND neuralfx_trace_session_tests)
 add_executable(neuralfx_trace_trigger_tests tests/trace_trigger_tests.cpp)
 target_link_libraries(neuralfx_trace_trigger_tests PRIVATE neuralfx_diagnostics)
 add_test(NAME neuralfx_trace_trigger_tests COMMAND neuralfx_trace_trigger_tests)
+add_executable(neuralfx_frame_trace_detail_tests tests/frame_trace_detail_tests.cpp)
+target_link_libraries(neuralfx_frame_trace_detail_tests PRIVATE neuralfx_diagnostics)
+add_test(NAME neuralfx_frame_trace_detail_tests COMMAND neuralfx_frame_trace_detail_tests)
+add_executable(neuralfx_pipeline_state_tests tests/pipeline_state_tests.cpp)
+target_link_libraries(neuralfx_pipeline_state_tests PRIVATE neuralfx_diagnostics)
+add_test(NAME neuralfx_pipeline_state_tests COMMAND neuralfx_pipeline_state_tests)

@@ -49,6 +49,13 @@ int capture_case() {
     return session.recording() ? 18 : 0;
 }
 
+int state_reset_case() {
+    TraceSession session(64);
+    session.pipeline().set_pixel_shader(0x55);
+    if (!session.request(1)) return 30;
+    return session.pipeline().pixel_shader() == 0 ? 0 : 31;
+}
+
 int busy_case() {
     TraceSession session(64);
     if (session.request(0)) return 20;
@@ -63,7 +70,7 @@ int busy_case() {
 }
 
 int main() {
-    for (auto test_case : {idle_case, capture_case, busy_case}) {
+    for (auto test_case : {idle_case, capture_case, state_reset_case, busy_case}) {
         if (int code = test_case(); code != 0) return code;
     }
     return 0;

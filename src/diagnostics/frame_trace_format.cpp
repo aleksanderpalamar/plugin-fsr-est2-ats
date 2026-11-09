@@ -27,13 +27,9 @@ std::string describe(const TraceTarget& target) {
         " fmt=" + std::to_string(target.format) + " samples=" + std::to_string(target.samples);
 }
 
-std::string reads(const TraceEntry& entry, std::uint64_t backbuffer) {
-    if (entry.reads.empty()) return {};
-    std::string text = " reads=";
-    for (size_t index = 0; index < entry.reads.size(); ++index) {
-        if (index > 0) text += ",";
-        text += name(entry.reads[index], backbuffer);
-    }
+std::string list(const std::vector<std::uint64_t>& ids, std::uint64_t backbuffer) {
+    std::string text;
+    for (size_t index = 0; index < ids.size(); ++index) text += (index > 0 ? "," : "") + name(ids[index], backbuffer);
     return text;
 }
 
@@ -44,7 +40,22 @@ std::string pass(const TraceEntry& entry, std::uint64_t backbuffer) {
     if (entry.depth) text += " ds=" + name(entry.depth->id, backbuffer);
     if (entry.viewport)
         text += " vp=" + decimal(entry.viewport->width) + "x" + decimal(entry.viewport->height);
-    return text + " draws=" + std::to_string(entry.draws) + reads(entry, backbuffer);
+    return text + " draws=" + std::to_string(entry.draws) +
+        (entry.reads.empty() ? std::string() : " reads=" + list(entry.reads, backbuffer));
+}
+
+std::string draw(const DrawDetail& detail, std::uint64_t backbuffer) {
+    std::string text = " draw count=" + std::to_string(detail.count) +
+        " ps=" + (detail.shader ? hex(detail.shader) : std::string("none"));
+    return detail.inputs.empty() ? text : text + " inputs=" + list(detail.inputs, backbuffer);
+}
+
+std::string constants(const ConstantSnapshot& snapshot) {
+    std::string values;
+    for (size_t index = 0; index < snapshot.values.size(); ++index)
+        values += (index > 0 ? "," : "") + decimal(snapshot.values[index]);
+    return " constants vs slot=" + std::to_string(snapshot.slot) + " buffer=" + hex(snapshot.buffer) +
+        " size=" + std::to_string(snapshot.size) + " values=" + (values.empty() ? "unknown" : values);
 }
 
 std::string body(const TraceEntry& entry, std::uint64_t backbuffer) {
@@ -55,6 +66,10 @@ std::string body(const TraceEntry& entry, std::uint64_t backbuffer) {
         return " clear-color rt=" + name(entry.destination, backbuffer);
     case EntryKind::ClearDepth:
         return " clear-depth ds=" + name(entry.destination, backbuffer);
+    case EntryKind::Draw:
+        return draw(*entry.detail, backbuffer);
+    case EntryKind::Constants:
+        return constants(*entry.constants);
     case EntryKind::Pass:
     case EntryKind::InheritedPass:
         break;

@@ -18,6 +18,7 @@ void FrameTrace::begin(const TraceTarget& backbuffer) {
     targets_.push_back({backbuffer, TargetRole::Color, 0, 0});
     binding_ = Binding::Inherited;
     pass_ = 0;
+    details_ = 0;
     dropped_ = 0;
     draws_ = 0;
 }
@@ -84,12 +85,13 @@ void FrameTrace::draw() {
     if (auto* pass = active_pass()) ++pass->draws;
 }
 
-void FrameTrace::read(std::uint64_t id) {
+void FrameTrace::read(const TraceTarget& target, TargetRole role) {
     auto* pass = recorded_pass();
-    auto* known = usage(id);
-    if (!pass || !known) return;
-    if (std::find(pass->reads.begin(), pass->reads.end(), id) != pass->reads.end()) return;
-    pass->reads.push_back(id);
+    if (!pass) return;
+    if (!usage(target.id)) targets_.push_back({target, role, 0, 0});
+    auto* known = usage(target.id);
+    if (std::find(pass->reads.begin(), pass->reads.end(), target.id) != pass->reads.end()) return;
+    pass->reads.push_back(target.id);
     ++known->reads;
 }
 
@@ -113,6 +115,35 @@ void FrameTrace::clear_color(std::uint64_t id) {
 void FrameTrace::clear_depth(std::uint64_t id) {
     auto entry = entry_of(EntryKind::ClearDepth);
     entry.destination = id;
+    add(std::move(entry));
+}
+
+const TraceEntry* FrameTrace::current_pass() const noexcept {
+    return binding_ == Binding::Recorded ? &entries_[pass_] : nullptr;
+}
+
+bool FrameTrace::wants_draw_detail() const noexcept {
+    const auto* pass = current_pass();
+    if (!pass || details_ >= detail_limit_) return false;
+    return std::any_of(pass->colors.begin(), pass->colors.end(),
+        [this](const TraceTarget& color) { return color.id == backbuffer_.id; });
+}
+
+bool FrameTrace::wants_constants() const noexcept {
+    const auto* pass = current_pass();
+    if (!pass || !pass->depth || pass->draws > 0) return false;
+    return pass->depth->width == backbuffer_.width && pass->depth->height == backbuffer_.height;
+}
+
+void FrameTrace::detail(DrawDetail detail) {
+    auto entry = entry_of(EntryKind::Draw);
+    entry.detail = std::move(detail);
+    if (add(std::move(entry))) ++details_;
+}
+
+void FrameTrace::constants(ConstantSnapshot snapshot) {
+    auto entry = entry_of(EntryKind::Constants);
+    entry.constants = std::move(snapshot);
     add(std::move(entry));
 }
 }

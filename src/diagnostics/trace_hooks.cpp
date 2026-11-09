@@ -57,7 +57,7 @@ void STDMETHODCALLTYPE on_set_resources(ID3D11DeviceContext* context, UINT start
     ID3D11ShaderResourceView* const* views) noexcept {
     record([&](FrameTrace& trace) {
         for (UINT index = 0; views && index < count; ++index)
-            if (views[index]) trace.read(resource_id(views[index]));
+            if (views[index]) trace.read(TraceTarget{resource_id(views[index])}, TargetRole::Color);
     });
     original_set_resources(context, start, count, views);
 }

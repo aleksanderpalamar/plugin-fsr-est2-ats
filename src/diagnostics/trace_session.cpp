@@ -4,6 +4,7 @@ namespace neuralfx::diagnostics {
 bool TraceSession::request(std::uint32_t frames) noexcept {
     if (frames == 0 || state_ != SessionState::Idle) return false;
     remaining_ = frames;
+    pipeline_.reset();
     state_ = SessionState::Armed;
     return true;
 }

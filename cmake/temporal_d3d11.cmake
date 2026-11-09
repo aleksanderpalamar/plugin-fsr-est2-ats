@@ -35,3 +35,17 @@ target_link_libraries(neuralfx_scene_tracker_tests PRIVATE neuralfx_temporal_d3d
 set_target_properties(neuralfx_scene_tracker_tests PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests)
 add_test(NAME neuralfx_scene_tracker_tests COMMAND neuralfx_scene_tracker_tests)
+
+add_executable(neuralfx_motion_overlay_pass_tests
+    tests/motion_overlay_pass_tests.cpp
+    src/renderer/motion_overlay_pass.cpp
+    src/renderer/fullscreen_draw.cpp
+    src/gpu/shader_compiler.cpp
+    src/common/logger.cpp
+)
+target_compile_features(neuralfx_motion_overlay_pass_tests PRIVATE cxx_std_20)
+target_compile_definitions(neuralfx_motion_overlay_pass_tests PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_include_directories(neuralfx_motion_overlay_pass_tests PRIVATE src)
+target_link_libraries(neuralfx_motion_overlay_pass_tests PRIVATE d3d11 ${D3DCOMPILER_LIBRARY})
+add_dependencies(neuralfx_motion_overlay_pass_tests neuralfx_runtime_assets)
+add_test(NAME neuralfx_motion_overlay_pass_tests COMMAND neuralfx_motion_overlay_pass_tests)

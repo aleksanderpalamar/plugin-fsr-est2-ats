@@ -1,3 +1,13 @@
+add_library(neuralfx_temporal_d3d11 STATIC src/temporal/scene_tracker.cpp src/temporal/camera_readback.cpp
+    src/temporal/scene_hooks.cpp)
+target_compile_features(neuralfx_temporal_d3d11 PUBLIC cxx_std_20)
+target_compile_definitions(neuralfx_temporal_d3d11 PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_include_directories(neuralfx_temporal_d3d11 PUBLIC src)
+target_link_libraries(neuralfx_temporal_d3d11 PUBLIC neuralfx_temporal d3d11)
+target_link_libraries(dxgi PRIVATE neuralfx_temporal_d3d11)
+target_link_libraries(neuralfx_depth_hook_tests PRIVATE neuralfx_temporal_d3d11)
+target_link_libraries(neuralfx_frame_trace_hook_tests PRIVATE neuralfx_temporal_d3d11)
+
 add_executable(neuralfx_camera_motion_pass_tests
     tests/camera_motion_pass_tests.cpp
     src/renderer/camera_motion_pass.cpp
@@ -11,3 +21,17 @@ target_include_directories(neuralfx_camera_motion_pass_tests PRIVATE src)
 target_link_libraries(neuralfx_camera_motion_pass_tests PRIVATE neuralfx_temporal d3d11 ${D3DCOMPILER_LIBRARY})
 add_dependencies(neuralfx_camera_motion_pass_tests neuralfx_runtime_assets)
 add_test(NAME neuralfx_camera_motion_pass_tests COMMAND neuralfx_camera_motion_pass_tests)
+
+add_executable(neuralfx_scene_tracker_tests
+    tests/scene_tracker_tests.cpp
+    src/dxgi/context_hook.cpp
+    src/dxgi/depth_capture.cpp
+    src/renderer/depth_format.cpp
+    src/common/logger.cpp
+)
+target_compile_definitions(neuralfx_scene_tracker_tests PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_link_libraries(neuralfx_scene_tracker_tests PRIVATE neuralfx_temporal_d3d11 neuralfx_trace_d3d11
+    ${D3DCOMPILER_LIBRARY} user32)
+set_target_properties(neuralfx_scene_tracker_tests PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests)
+add_test(NAME neuralfx_scene_tracker_tests COMMAND neuralfx_scene_tracker_tests)

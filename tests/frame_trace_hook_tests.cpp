@@ -46,9 +46,6 @@ void game_frame(Device& gpu, const Pipeline& pipeline, Scene& scene) {
     context->OMSetRenderTargets(1, &color_target, scene.depth_target.Get());
     D3D11_VIEWPORT viewport{0.0f, 0.0f, 16.0f, 16.0f, 0.0f, 1.0f};
     context->RSSetViewports(1, &viewport);
-    auto* constants = pipeline.constants.Get();
-    context->VSSetConstantBuffers(0, 1, &constants);
-    write_constants(context, constants);
     context->Draw(3, 0);
     context->DrawIndexed(3, 0, 0);
     context->CopyResource(scene.history.Get(), scene.color.Get());
@@ -70,7 +67,7 @@ std::vector<std::string> expected(const Scene& scene, const Pipeline& pipeline) 
         "Trace 0 clear-color rt=" + color,
         "Trace 1 clear-depth ds=" + depth,
         "Trace 2 pass rt=" + color + " ds=" + depth + " vp=16x16 draws=2",
-        "Trace 3 constants vs slot=0 buffer=" + hex(pipeline.constants.Get()) + " size=16 values=1,2,3,4",
+        "Trace 3 constants vs slot=0 buffer=" + hex(pipeline.constants.Get()) + " offset=0 size=16 values=1,2,3,4",
         "Trace 4 copy src=" + color + " dst=" + history,
         "Trace 5 pass rt=bb draws=1 reads=" + color + "," + previous,
         "Trace 6 draw count=3 ps=" + hex(pipeline.pixel.Get()) + " inputs=" + color + "," + previous,
@@ -103,6 +100,9 @@ int main() {
     if (FAILED(create_device(window, gpu))) return 2;
     if (!create_pipeline(gpu.device.Get(), pipeline) || !create_scene(gpu, scene)) return 3;
     bind_pipeline(gpu.context.Get(), pipeline);
+    auto* constants = pipeline.constants.Get();
+    gpu.context->VSSetConstantBuffers(0, 1, &constants);
+    write_constants(gpu.context.Get(), constants);
     neuralfx::hook_context(gpu.swapchain.Get());
     namespace trace = neuralfx::diagnostics;
     trace::trace_present_end(gpu.swapchain.Get());

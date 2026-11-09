@@ -21,12 +21,25 @@ namespace detail {
 std::atomic_bool& tracing() noexcept;
 std::mutex& trace_mutex() noexcept;
 TraceSession& trace_session() noexcept;
+
+inline bool& recording_thread() noexcept {
+    thread_local bool active = false;
+    return active;
+}
+
+struct RecordingScope {
+    RecordingScope() noexcept { recording_thread() = true; }
+    ~RecordingScope() { recording_thread() = false; }
+    RecordingScope(const RecordingScope&) = delete;
+    RecordingScope& operator=(const RecordingScope&) = delete;
+};
 }
 
 template <typename Action>
 void record_pipeline(Action&& action) noexcept {
-    if (!detail::tracing().load(std::memory_order_acquire)) return;
+    if (!detail::tracing().load(std::memory_order_acquire) || detail::recording_thread()) return;
     std::lock_guard lock(detail::trace_mutex());
+    detail::RecordingScope scope;
     auto& session = detail::trace_session();
     if (!session.recording()) return;
     try {

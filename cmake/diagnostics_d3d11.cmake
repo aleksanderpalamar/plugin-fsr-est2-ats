@@ -1,5 +1,6 @@
 add_library(neuralfx_trace_d3d11 STATIC src/diagnostics/frame_tracer.cpp
-    src/diagnostics/trace_hooks.cpp src/diagnostics/trace_state_hooks.cpp src/diagnostics/trace_resources.cpp)
+    src/diagnostics/trace_hooks.cpp src/diagnostics/trace_state_hooks.cpp src/diagnostics/trace_resources.cpp
+    src/diagnostics/trace_constants.cpp)
 target_compile_features(neuralfx_trace_d3d11 PUBLIC cxx_std_20)
 target_compile_definitions(neuralfx_trace_d3d11 PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
 target_include_directories(neuralfx_trace_d3d11 PUBLIC src)

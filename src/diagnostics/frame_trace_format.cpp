@@ -55,7 +55,7 @@ std::string constants(const ConstantSnapshot& snapshot) {
     for (size_t index = 0; index < snapshot.values.size(); ++index)
         values += (index > 0 ? "," : "") + decimal(snapshot.values[index]);
     return " constants vs slot=" + std::to_string(snapshot.slot) + " buffer=" + hex(snapshot.buffer) +
-        " size=" + std::to_string(snapshot.size) + " values=" + (values.empty() ? "unknown" : values);
+        " offset=" + std::to_string(snapshot.offset) + " size=" + std::to_string(snapshot.size) + " values=" + (values.empty() ? "unknown" : values);
 }
 
 std::string body(const TraceEntry& entry, std::uint64_t backbuffer) {

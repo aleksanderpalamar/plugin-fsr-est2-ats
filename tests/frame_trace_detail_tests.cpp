@@ -54,16 +54,16 @@ int constants_case() {
     std::array scene_targets{scene};
     trace.bind(scene_targets, depth);
     if (!trace.wants_constants()) return 21;
-    trace.constants({0, 0xc0, 64, {1.0f, -0.5f, 0.25f}});
-    trace.constants({2, 0xc2, 32, {}});
+    trace.constants({0, 0xc0, 256, 64, {1.0f, -0.5f, 0.25f}});
+    trace.constants({2, 0xc2, 0, 32, {}});
     trace.draw();
     if (trace.wants_constants()) return 22;
     return expect(trace.lines(), {
         "Trace frame begin backbuffer=bb 1920x1080 fmt=28 samples=1",
         "Trace 0 pass ds=400 draws=1",
         "Trace 1 pass rt=200 ds=300 draws=1",
-        "Trace 2 constants vs slot=0 buffer=c0 size=64 values=1,-0.5,0.25",
-        "Trace 3 constants vs slot=2 buffer=c2 size=32 values=unknown",
+        "Trace 2 constants vs slot=0 buffer=c0 offset=256 size=64 values=1,-0.5,0.25",
+        "Trace 3 constants vs slot=2 buffer=c2 offset=0 size=32 values=unknown",
         "Trace target bb 1920x1080 fmt=28 samples=1 color writes=0 reads=0",
         "Trace target 200 1920x1080 fmt=29 samples=1 color writes=1 reads=0",
         "Trace target 300 1920x1080 fmt=20 samples=1 depth writes=1 reads=0",

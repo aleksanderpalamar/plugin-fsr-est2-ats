@@ -1,5 +1,6 @@
 #include "diagnostics/trace_hooks.hpp"
 #include "diagnostics/frame_tracer.hpp"
+#include "diagnostics/trace_constants.hpp"
 #include "diagnostics/trace_resources.hpp"
 #include "dxgi/vtable_patch.hpp"
 
@@ -17,10 +18,10 @@ inline std::uint32_t element_count() noexcept {
     return 0;
 }
 
-void record_draw(std::uint32_t count) noexcept {
+void record_draw(ID3D11DeviceContext* context, std::uint32_t count) noexcept {
     record_pipeline([&](FrameTrace& trace, PipelineState& state) {
         if (trace.wants_constants())
-            for (auto& snapshot : state.constants(4)) trace.constants(std::move(snapshot));
+            for (auto& snapshot : read_vertex_constants(context, 4, 64)) trace.constants(std::move(snapshot));
         if (trace.wants_draw_detail()) trace.detail({count, state.pixel_shader(), state.inputs()});
         trace.draw();
     });
@@ -32,7 +33,7 @@ struct DrawHook {
     static inline Function original = nullptr;
 
     static void STDMETHODCALLTYPE call(ID3D11DeviceContext* context, Arguments... arguments) noexcept {
-        record_draw(element_count(arguments...));
+        record_draw(context, element_count(arguments...));
         original(context, arguments...);
     }
 

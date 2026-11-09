@@ -20,5 +20,4 @@ struct TraceInput {
 };
 
 std::optional<TraceInput> describe_input(ID3D11ShaderResourceView* view) noexcept;
-std::optional<std::uint32_t> constant_buffer_size(ID3D11Resource* resource) noexcept;
 }

@@ -34,6 +34,7 @@ struct DrawDetail {
 struct ConstantSnapshot {
     std::uint32_t slot = 0;
     std::uint64_t buffer = 0;
+    std::uint32_t offset = 0;
     std::uint32_t size = 0;
     std::vector<float> values;
 };

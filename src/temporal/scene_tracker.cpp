@@ -71,7 +71,17 @@ void SceneTracker::targets_bound(ID3D11DeviceContext* context) noexcept {
 void SceneTracker::draw(ID3D11DeviceContext* context) noexcept {
     if (!active()) return;
     std::lock_guard lock(mutex_);
-    if (recording_ && recognizer_.draw() == DrawAction::ReadCamera) captured_ = camera_.capture(context, index_);
+    if (!recording_) return;
+    auto action = recognizer_.draw();
+    if (action == DrawAction::ReadCamera) captured_ = camera_.capture(context, index_);
+    if (action == DrawAction::None || !listener_) return;
+    listener_->first_draw(context, index_,
+        action == DrawAction::ReadCamera ? PassRole::SceneLighting : PassRole::TemporalResolve);
+}
+
+void SceneTracker::set_listener(PassListener* listener) noexcept {
+    std::lock_guard lock(mutex_);
+    listener_ = listener;
 }
 
 SceneSample SceneTracker::finish_frame(ID3D11DeviceContext* context) noexcept {

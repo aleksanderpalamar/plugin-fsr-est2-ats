@@ -16,12 +16,18 @@ ObservationReport ObservationReview::review(std::span<const CameraObservation> o
     for (const auto& observation : observations) {
         auto evaluated = evaluate_camera(observation.matrices, size);
         if (const auto* state = std::get_if<CameraState>(&evaluated))
-            report.jitters.push_back({observation.frame, state->jitter});
+            accept(observation, state->jitter, report);
         else
             report.rejections.push_back({observation.frame, std::get<CameraRejection>(evaluated)});
         place(observation, report);
     }
     return report;
+}
+
+void ObservationReview::accept(const CameraObservation& observation, Jitter jitter,
+    ObservationReport& report) noexcept {
+    report.jitters.push_back({observation.frame, jitter});
+    if (!sequence_phase(jitter)) report.unmatched.push_back({observation.frame, jitter, observation.matrices});
 }
 
 void ObservationReview::place(const CameraObservation& observation, ObservationReport& report) noexcept {

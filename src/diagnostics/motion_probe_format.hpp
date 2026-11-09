@@ -12,4 +12,5 @@ std::string motion_line(std::uint64_t frame, const temporal::TemporalDecision& d
     std::optional<temporal::RenderSize> render, std::int64_t cpu_us);
 std::string rejection_line(const temporal::RejectedCamera& rejected);
 std::string jump_line(const temporal::CameraStep& step);
+std::string unmatched_line(const temporal::UnmatchedCamera& camera);
 }

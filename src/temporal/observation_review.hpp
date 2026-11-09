@@ -13,9 +13,16 @@ struct RejectedCamera {
     CameraRejection rejection;
 };
 
+struct UnmatchedCamera {
+    std::uint64_t frame = 0;
+    Jitter jitter;
+    CameraMatrices matrices;
+};
+
 struct ObservationReport {
     std::vector<JitterObservation> jitters;
     std::vector<RejectedCamera> rejections;
+    std::vector<UnmatchedCamera> unmatched;
     std::vector<CameraStep> steps;
     std::optional<float> farthest_m;
     bool jump = false;
@@ -27,6 +34,7 @@ public:
     void reset() noexcept { continuity_.reset(); }
 
 private:
+    void accept(const CameraObservation& observation, Jitter jitter, ObservationReport& report) noexcept;
     void place(const CameraObservation& observation, ObservationReport& report) noexcept;
 
     CameraContinuity continuity_;

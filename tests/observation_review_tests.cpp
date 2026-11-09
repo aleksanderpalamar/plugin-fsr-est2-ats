@@ -34,7 +34,7 @@ int accepted_case() {
     auto report = review.review(observations, scene);
     if (report.jitters.size() != 2 || report.jitters[1].frame != 5) return 10;
     if (std::fabs(report.jitters[0].jitter.x + 0.4707f) > 2e-3f) return 11;
-    if (report.steps.size() != 1 || report.jump || !report.rejections.empty()) return 12;
+    if (report.steps.size() != 1 || report.jump || !report.rejections.empty() || !report.unmatched.empty()) return 12;
     if (!report.farthest_m || std::fabs(*report.farthest_m - 68.61f) > 0.1f) return 13;
     return 0;
 }
@@ -59,6 +59,18 @@ int rejected_case() {
     return report.farthest_m ? 0 : 32;
 }
 
+int unmatched_case() {
+    ObservationReview review;
+    Matrix4 shifted_jitter = view_projection;
+    for (int column = 0; column < 4; ++column) shifted_jitter[column] -= 1.4e-4f * view[8 + column];
+    auto report = review.review(std::vector<CameraObservation>{seen(9, view, shifted_jitter),
+        seen(10, view, view_projection)}, scene);
+    if (report.jitters.size() != 2 || report.unmatched.size() != 1) return 50;
+    const auto& unmatched = report.unmatched[0];
+    if (unmatched.frame != 9 || std::fabs(unmatched.jitter.x + 0.4707f) < 0.05f) return 51;
+    return unmatched.matrices.view_projection[0] == shifted_jitter[0] ? 0 : 52;
+}
+
 int empty_case() {
     ObservationReview review;
     auto report = review.review({}, scene);
@@ -67,7 +79,7 @@ int empty_case() {
 }
 
 int main() {
-    for (auto test_case : {accepted_case, jump_case, rejected_case, empty_case}) {
+    for (auto test_case : {accepted_case, jump_case, rejected_case, unmatched_case, empty_case}) {
         if (int code = test_case(); code != 0) return code;
     }
     return 0;

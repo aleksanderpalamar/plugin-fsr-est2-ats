@@ -1,6 +1,7 @@
 #pragma once
 
 #include "temporal/camera_capture.hpp"
+#include "temporal/pass_listener.hpp"
 #include "temporal/scene_recognizer.hpp"
 
 #include <d3d11.h>
@@ -25,6 +26,7 @@ public:
     void targets_bound(ID3D11DeviceContext* context) noexcept;
     void draw(ID3D11DeviceContext* context) noexcept;
     SceneSample finish_frame(ID3D11DeviceContext* context) noexcept;
+    void set_listener(PassListener* listener) noexcept;
 
 private:
     std::mutex mutex_;
@@ -34,6 +36,7 @@ private:
     std::uint64_t index_ = 0;
     SceneRecognizer recognizer_;
     CameraCapture camera_;
+    PassListener* listener_ = nullptr;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> depth_;
 };
 

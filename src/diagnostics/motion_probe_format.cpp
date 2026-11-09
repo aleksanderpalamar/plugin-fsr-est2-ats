@@ -5,6 +5,12 @@ namespace neuralfx::diagnostics {
 namespace {
 using temporal::TemporalStatus;
 
+std::string values(const temporal::Matrix4& matrix) {
+    std::string text;
+    for (std::size_t index = 0; index < matrix.size(); ++index) text += (index > 0 ? "," : "") + decimal(matrix[index]);
+    return text;
+}
+
 std::string position(temporal::Position value) {
     return fixed(value.x) + "," + fixed(value.y) + "," + fixed(value.z);
 }
@@ -68,5 +74,11 @@ std::string rejection_line(const temporal::RejectedCamera& rejected) {
 std::string jump_line(const temporal::CameraStep& step) {
     return "Motion camera jump frame=" + std::to_string(step.frame) + " move_m=" + fixed(step.distance_m) +
         " turn_deg=" + fixed(step.angle_deg) + " from=" + position(step.from) + " to=" + position(step.to);
+}
+
+std::string unmatched_line(const temporal::UnmatchedCamera& camera) {
+    return "Motion camera unmatched frame=" + std::to_string(camera.frame) + " jitter=" + decimal(camera.jitter.x) +
+        "," + decimal(camera.jitter.y) + " view=" + values(camera.matrices.view) +
+        " view_projection=" + values(camera.matrices.view_projection);
 }
 }

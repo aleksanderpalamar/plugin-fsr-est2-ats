@@ -21,7 +21,7 @@ inline std::uint32_t element_count() noexcept {
 void record_draw(ID3D11DeviceContext* context, std::uint32_t count) noexcept {
     record_pipeline([&](FrameTrace& trace, PipelineState& state) {
         if (trace.wants_constants())
-            for (auto& snapshot : read_vertex_constants(context, 4, 64)) trace.constants(std::move(snapshot));
+            for (auto& snapshot : read_constants(context, ShaderStage::Vertex, 4, 64)) trace.constants(std::move(snapshot));
         if (trace.wants_draw_detail()) trace.detail({count, state.pixel_shader(), state.inputs()});
         trace.draw();
     });

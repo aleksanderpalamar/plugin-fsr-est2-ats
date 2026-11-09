@@ -22,7 +22,8 @@ add_executable(neuralfx_temporal_history_tests tests/temporal_history_tests.cpp)
 target_link_libraries(neuralfx_temporal_history_tests PRIVATE neuralfx_temporal)
 add_test(NAME neuralfx_temporal_history_tests COMMAND neuralfx_temporal_history_tests)
 add_library(neuralfx_motion_probe_format STATIC src/diagnostics/motion_probe_format.cpp
-    src/diagnostics/motion_tally.cpp src/diagnostics/number_format.cpp)
+    src/diagnostics/motion_tally.cpp src/diagnostics/number_format.cpp
+    src/diagnostics/constant_dump_format.cpp)
 target_link_libraries(neuralfx_motion_probe_format PUBLIC neuralfx_temporal)
 add_executable(neuralfx_motion_probe_format_tests tests/motion_probe_format_tests.cpp)
 target_link_libraries(neuralfx_motion_probe_format_tests PRIVATE neuralfx_motion_probe_format)
@@ -42,3 +43,6 @@ add_test(NAME neuralfx_camera_continuity_tests COMMAND neuralfx_camera_continuit
 add_executable(neuralfx_observation_review_tests tests/observation_review_tests.cpp)
 target_link_libraries(neuralfx_observation_review_tests PRIVATE neuralfx_temporal)
 add_test(NAME neuralfx_observation_review_tests COMMAND neuralfx_observation_review_tests)
+add_executable(neuralfx_constant_dump_format_tests tests/constant_dump_format_tests.cpp)
+target_link_libraries(neuralfx_constant_dump_format_tests PRIVATE neuralfx_motion_probe_format)
+add_test(NAME neuralfx_constant_dump_format_tests COMMAND neuralfx_constant_dump_format_tests)

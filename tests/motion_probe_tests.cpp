@@ -66,8 +66,8 @@ void upload_camera(Device& gpu, const Targets& targets, std::uint32_t phase, flo
     gpu.context->UpdateSubresource(targets.camera.Get(), 0, &box, values.data(), 0, 0);
 }
 
-void request_toggle() {
-    std::ofstream(neuralfx::module_directory() / L"NeuralFX" / L"motion-debug").put('\n');
+void request(const wchar_t* name) {
+    std::ofstream(neuralfx::module_directory() / L"NeuralFX" / name).put('\n');
 }
 
 void present(Device& gpu, const Targets& targets, ID3D11RenderTargetView* output, std::uint32_t phase,
@@ -129,7 +129,8 @@ int main() {
     gpu.swapchain->GetBuffer(0, IID_PPV_ARGS(&backbuffer));
     if (FAILED(gpu.device->CreateRenderTargetView(backbuffer.Get(), nullptr, &output))) return 3;
     auto offset = log_size();
-    request_toggle();
+    request(L"motion-debug");
+    request(L"constants-debug");
     diagnostics::motion_probe_frame_end(gpu.swapchain.Get());
     for (std::uint32_t phase = 3; phase < 3 + 16; ++phase)
         present(gpu, targets, output.Get(), phase, phase < 11 ? 0.0f : 10.0f);
@@ -141,6 +142,9 @@ int main() {
     if (result == 0 && log.find("status=camera-cut") == std::string::npos) result = 33;
     if (result == 0 && log.find("Motion camera jump") == std::string::npos) result = 34;
     if (result == 0 && log.find("Motion camera rejected") != std::string::npos) result = 35;
+    if (result == 0 && log.find("Constant dump armed for 4 frames") == std::string::npos) result = 36;
+    if (result == 0 && log.find("pass=lighting stage=vs slot=0") == std::string::npos) result = 37;
+    if (result == 0 && log.find("pass=resolve stage=vs slot=0") == std::string::npos) result = 38;
     DestroyWindow(window);
     return result;
 }

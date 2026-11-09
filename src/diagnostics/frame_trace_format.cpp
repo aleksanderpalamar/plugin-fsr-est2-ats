@@ -54,7 +54,8 @@ std::string constants(const ConstantSnapshot& snapshot) {
     std::string values;
     for (size_t index = 0; index < snapshot.values.size(); ++index)
         values += (index > 0 ? "," : "") + decimal(snapshot.values[index]);
-    return " constants vs slot=" + std::to_string(snapshot.slot) + " buffer=" + hex(snapshot.buffer) +
+    return std::string(" constants ") + (snapshot.stage == ShaderStage::Pixel ? "ps" : "vs") +
+        " slot=" + std::to_string(snapshot.slot) + " buffer=" + hex(snapshot.buffer) +
         " offset=" + std::to_string(snapshot.offset) + " size=" + std::to_string(snapshot.size) + " values=" + (values.empty() ? "unknown" : values);
 }
 

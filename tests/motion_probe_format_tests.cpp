@@ -68,10 +68,19 @@ int jump_case() {
     return expect(diagnostics::jump_line(step),
         "Motion camera jump frame=12 move_m=12.35 turn_deg=0.50 from=1.00,2.00,-3.50 to=13.25,2.00,-3.50", 60);
 }
+
+int unmatched_case() {
+    temporal::UnmatchedCamera camera{21, {0.125f, -0.25f}, {}};
+    camera.matrices.view[0] = 1.0f;
+    camera.matrices.view_projection[15] = 2.5f;
+    std::string zeros = "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0";
+    return expect(diagnostics::unmatched_line(camera), "Motion camera unmatched frame=21 jitter=0.125,-0.25 view=1," +
+        zeros + " view_projection=" + zeros + ",2.5", 70);
+}
 }
 
 int main() {
-    for (auto test_case : {ready_case, missing_case, names_case, rejection_case, jump_case}) {
+    for (auto test_case : {ready_case, missing_case, names_case, rejection_case, jump_case, unmatched_case}) {
         if (int code = test_case(); code != 0) return code;
     }
     return 0;

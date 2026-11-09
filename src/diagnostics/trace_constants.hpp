@@ -7,6 +7,6 @@
 #include <vector>
 
 namespace neuralfx::diagnostics {
-std::vector<ConstantSnapshot> read_vertex_constants(ID3D11DeviceContext* context, std::uint32_t slots,
+std::vector<ConstantSnapshot> read_constants(ID3D11DeviceContext* context, ShaderStage stage, std::uint32_t slots,
     std::uint32_t floats) noexcept;
 }

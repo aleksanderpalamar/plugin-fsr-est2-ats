@@ -19,11 +19,20 @@ struct Binding {
     std::array<UINT, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT> count{};
 };
 
-Binding bound_buffers(ID3D11DeviceContext* context, UINT slots) {
+void bound_extended(ID3D11DeviceContext1* context, ShaderStage stage, UINT slots, Binding& binding) {
+    if (stage == ShaderStage::Pixel)
+        context->PSGetConstantBuffers1(0, slots, binding.buffers.data(), binding.first.data(), binding.count.data());
+    else
+        context->VSGetConstantBuffers1(0, slots, binding.buffers.data(), binding.first.data(), binding.count.data());
+}
+
+Binding bound_buffers(ID3D11DeviceContext* context, ShaderStage stage, UINT slots) {
     Binding binding;
     ComPtr<ID3D11DeviceContext1> extended;
     if (SUCCEEDED(context->QueryInterface(IID_PPV_ARGS(&extended))))
-        extended->VSGetConstantBuffers1(0, slots, binding.buffers.data(), binding.first.data(), binding.count.data());
+        bound_extended(extended.Get(), stage, slots, binding);
+    else if (stage == ShaderStage::Pixel)
+        context->PSGetConstantBuffers(0, slots, binding.buffers.data());
     else
         context->VSGetConstantBuffers(0, slots, binding.buffers.data());
     return binding;
@@ -59,18 +68,20 @@ std::optional<ConstantSnapshot> snapshot(ID3D11DeviceContext* context, ID3D11Buf
 }
 }
 
-std::vector<ConstantSnapshot> read_vertex_constants(ID3D11DeviceContext* context, std::uint32_t slots,
+std::vector<ConstantSnapshot> read_constants(ID3D11DeviceContext* context, ShaderStage stage, std::uint32_t slots,
     std::uint32_t floats) noexcept {
     try {
         UINT count = std::min<UINT>(slots, D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT);
-        auto binding = bound_buffers(context, count);
+        auto binding = bound_buffers(context, stage, count);
         std::vector<ConstantSnapshot> snapshots;
         for (UINT slot = 0; slot < count; ++slot) {
             ComPtr<ID3D11Buffer> buffer;
             buffer.Attach(binding.buffers[slot]);
             if (!buffer) continue;
             auto taken = snapshot(context, buffer.Get(), slot, binding.first[slot], binding.count[slot], floats);
-            if (taken) snapshots.push_back(std::move(*taken));
+            if (!taken) continue;
+            taken->stage = stage;
+            snapshots.push_back(std::move(*taken));
         }
         return snapshots;
     } catch (...) {

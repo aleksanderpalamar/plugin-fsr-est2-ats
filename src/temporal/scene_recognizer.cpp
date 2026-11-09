@@ -35,9 +35,15 @@ PassRole SceneRecognizer::bind(std::span<const Surface> colors, std::optional<Su
 }
 
 DrawAction SceneRecognizer::draw() noexcept {
-    if (current_ != PassRole::SceneLighting || frame_.camera_requested) return DrawAction::None;
-    frame_.camera_requested = true;
-    return DrawAction::ReadCamera;
+    if (current_ == PassRole::SceneLighting && !frame_.camera_requested) {
+        frame_.camera_requested = true;
+        return DrawAction::ReadCamera;
+    }
+    if (current_ == PassRole::TemporalResolve && !frame_.resolve_drawn) {
+        frame_.resolve_drawn = true;
+        return DrawAction::ReadResolve;
+    }
+    return DrawAction::None;
 }
 
 PassRole SceneRecognizer::classify(std::span<const Surface> colors, const std::optional<Surface>& depth) const noexcept {

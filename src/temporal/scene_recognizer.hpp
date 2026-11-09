@@ -15,13 +15,14 @@ struct Surface {
 };
 
 enum class PassRole { Other, SceneGeometry, SceneLighting, TemporalResolve, Output };
-enum class DrawAction { None, ReadCamera };
+enum class DrawAction { None, ReadCamera, ReadResolve };
 
 struct SceneFrame {
     std::optional<RenderSize> render;
     std::optional<std::uint64_t> depth;
     bool camera_requested = false;
     bool temporal_resolve = false;
+    bool resolve_drawn = false;
 };
 
 class SceneRecognizer {

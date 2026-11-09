@@ -36,7 +36,9 @@ std::vector<Step> frame_steps(bool temporal) {
             {DrawAction::ReadCamera, DrawAction::None}},
         {{forward}, depth, PassRole::Other, {DrawAction::None}},
     };
-    if (temporal) steps.push_back({{resolve.begin(), resolve.end()}, std::nullopt, PassRole::TemporalResolve, {DrawAction::None}});
+    if (temporal)
+        steps.push_back({{resolve.begin(), resolve.end()}, std::nullopt, PassRole::TemporalResolve,
+            {DrawAction::ReadResolve, DrawAction::None}});
     steps.push_back({{tonemapped}, std::nullopt, PassRole::Other, {DrawAction::None}});
     steps.push_back({{backbuffer}, std::nullopt, PassRole::Output, {DrawAction::None, DrawAction::None}});
     return steps;

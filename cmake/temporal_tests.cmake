@@ -1,7 +1,8 @@
 add_library(neuralfx_temporal STATIC src/temporal/projection_jitter.cpp
     src/temporal/matrix4.cpp src/temporal/camera_state.cpp
     src/temporal/motion_reprojection.cpp src/temporal/scene_recognizer.cpp
-    src/temporal/temporal_history.cpp)
+    src/temporal/temporal_history.cpp src/temporal/jitter_sequence.cpp
+    src/temporal/jitter_tracker.cpp)
 target_compile_features(neuralfx_temporal PUBLIC cxx_std_20)
 target_include_directories(neuralfx_temporal PUBLIC src)
 add_executable(neuralfx_projection_jitter_tests tests/projection_jitter_tests.cpp)
@@ -24,3 +25,9 @@ target_link_libraries(neuralfx_motion_probe_format PUBLIC neuralfx_temporal)
 add_executable(neuralfx_motion_probe_format_tests tests/motion_probe_format_tests.cpp)
 target_link_libraries(neuralfx_motion_probe_format_tests PRIVATE neuralfx_motion_probe_format)
 add_test(NAME neuralfx_motion_probe_format_tests COMMAND neuralfx_motion_probe_format_tests)
+add_executable(neuralfx_jitter_sequence_tests tests/jitter_sequence_tests.cpp)
+target_link_libraries(neuralfx_jitter_sequence_tests PRIVATE neuralfx_temporal)
+add_test(NAME neuralfx_jitter_sequence_tests COMMAND neuralfx_jitter_sequence_tests)
+add_executable(neuralfx_jitter_tracker_tests tests/jitter_tracker_tests.cpp)
+target_link_libraries(neuralfx_jitter_tracker_tests PRIVATE neuralfx_temporal)
+add_test(NAME neuralfx_jitter_tracker_tests COMMAND neuralfx_jitter_tracker_tests)

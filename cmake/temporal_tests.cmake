@@ -1,0 +1,6 @@
+add_library(neuralfx_temporal STATIC src/temporal/projection_jitter.cpp)
+target_compile_features(neuralfx_temporal PUBLIC cxx_std_20)
+target_include_directories(neuralfx_temporal PUBLIC src)
+add_executable(neuralfx_projection_jitter_tests tests/projection_jitter_tests.cpp)
+target_link_libraries(neuralfx_projection_jitter_tests PRIVATE neuralfx_temporal)
+add_test(NAME neuralfx_projection_jitter_tests COMMAND neuralfx_projection_jitter_tests)

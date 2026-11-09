@@ -43,6 +43,7 @@ add_executable(neuralfx_raytracing_gpu_data_tests tests/raytracing_gpu_data_test
 target_link_libraries(neuralfx_raytracing_gpu_data_tests PRIVATE neuralfx_raytracing)
 add_test(NAME neuralfx_raytracing_gpu_data_tests COMMAND neuralfx_raytracing_gpu_data_tests)
 include(cmake/diagnostics_tests.cmake)
+include(cmake/temporal_tests.cmake)
 if(NOT WIN32)
     return()
 endif()

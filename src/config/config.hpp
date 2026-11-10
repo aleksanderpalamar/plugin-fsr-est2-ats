@@ -1,5 +1,7 @@
 #pragma once
 
+#include "upscale/upscale_mode.hpp"
+
 #include <iosfwd>
 #include <string>
 
@@ -47,6 +49,7 @@ struct Config {
     float sharpness = 0.65f;
     PhotorealSettings photoreal;
     RaytracingSettings raytracing;
+    upscale::UpscaleMode upscale_mode = upscale::UpscaleMode::Off;
     std::string lut_path;
 };
 

@@ -83,6 +83,12 @@ constexpr std::array debug_views{
     Choice<TraceDebugView>{"reflection", TraceDebugView::Reflection}
 };
 
+constexpr std::array upscale_modes{
+    Choice<upscale::UpscaleMode>{"off", upscale::UpscaleMode::Off},
+    Choice<upscale::UpscaleMode>{"strict", upscale::UpscaleMode::Strict},
+    Choice<upscale::UpscaleMode>{"auto", upscale::UpscaleMode::Auto}
+};
+
 template <typename Settings, size_t Count>
 bool assign_parameter(Settings& settings, const std::array<Parameter<Settings>, Count>& table,
     std::string_view key, float value) noexcept {
@@ -115,6 +121,7 @@ void assign(Config& config, std::string_view key, std::string_view value) {
     if (key == "lut_path") config.lut_path = value;
     if (key == "rt_depth") assign_choice(config.raytracing.depth, depth_conventions, value);
     if (key == "rt_debug") assign_choice(config.raytracing.debug_view, debug_views, value);
+    if (key == "upscale_mode") assign_choice(config.upscale_mode, upscale_modes, value);
     auto parsed = parse_number(value);
     if (!parsed) return;
     if (key == "sharpness") config.sharpness = std::clamp(*parsed, 0.0f, 1.0f);

@@ -84,6 +84,7 @@ The `raytracing` pass converts the captured depth to view-space distance, recons
 | `rt_vertical_fov` | 55 | 10–150 | Game vertical field of view in degrees |
 | `rt_depth` | `standard` | `standard`, `reversed` | Depth convention; `reversed` treats 0 as far |
 | `rt_debug` | `off` | `off`, `depth`, `normals`, `occlusion`, `reflection` | Shows one stage directly on screen, bypassing grading |
+| `upscale_mode` | `off` | `off`, `strict`, `auto` | Selects the AMD FSR upscaling provider. `off` keeps the original path. `strict` only accepts FSR 4.1.2 and otherwise runs without upscaling. `auto` prefers FSR 4.1.2 and falls back to an identified FSR 3.1.6. The mode is read at startup; the log reports the provider version actually in use |
 
 The projection defaults (`rt_near_plane`, `rt_far_plane`, `rt_vertical_fov`, `rt_depth`) are estimates that have not been validated in ETS2 or ATS. Calibrate them in game: with `rt_debug=depth`, distance should form a smooth gradient from black near the camera to white at `rt_max_distance`; with `rt_debug=normals`, flat ground should look light green and surfaces facing the camera olive. A wrong `rt_depth` makes the sky dark in the depth view. The log records `Screen-space depth copies per frame: N` whenever the count changes; values above 1 mean the game unbinds several full-resolution depth targets per frame, and the pass uses the last one.
 

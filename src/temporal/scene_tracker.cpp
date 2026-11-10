@@ -74,6 +74,7 @@ void SceneTracker::draw(ID3D11DeviceContext* context) noexcept {
     if (!recording_) return;
     auto action = recognizer_.draw();
     if (action == DrawAction::ReadCamera) captured_ = camera_.capture(context, index_);
+    if (action == DrawAction::ReadResolve) resolve_.capture(context, index_);
     if (action == DrawAction::None || !listener_) return;
     listener_->first_draw(context, index_,
         action == DrawAction::ReadCamera ? PassRole::SceneLighting : PassRole::TemporalResolve);
@@ -89,6 +90,7 @@ SceneSample SceneTracker::finish_frame(ID3D11DeviceContext* context) noexcept {
     if (!recording_) return {};
     recording_ = false;
     SceneSample sample{index_, recognizer_.frame(), nullptr, depth_, camera_.collect(context)};
+    sample.resolves = resolve_.collect(context);
     if (captured_) sample.camera = camera_.camera();
     return sample;
 }

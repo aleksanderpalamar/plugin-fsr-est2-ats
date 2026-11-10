@@ -38,6 +38,30 @@ std::optional<temporal::CameraMatrices> read_camera(Device& gpu, ID3D11Buffer* c
     return matrices;
 }
 
+bool holds_resolve(const std::vector<float>& values) {
+    auto expected = resolve_pattern();
+    return values.size() == expected.size() && std::equal(values.begin(), values.end(), expected.begin());
+}
+
+int observe_resolve(Device& gpu, const Targets& targets, ID3D11Texture2D* backbuffer) {
+    auto& tracker = temporal::scene_tracker();
+    for (int attempt = 0; attempt < 50; ++attempt) {
+        tracker.start_frame(backbuffer);
+        game_frame(gpu, targets, true);
+        gpu.context->Flush();
+        auto sample = tracker.finish_frame(gpu.context.Get());
+        if (sample.resolves.empty()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            continue;
+        }
+        for (size_t index = 1; index < sample.resolves.size(); ++index)
+            if (sample.resolves[index].frame <= sample.resolves[index - 1].frame) return 53;
+        if (sample.resolves.back().frame > sample.index) return 50;
+        return holds_resolve(sample.resolves.back().values) ? 0 : 51;
+    }
+    return 52;
+}
+
 int check(Device& gpu, const temporal::SceneSample& sample, const Targets& targets) {
     if (!sample.frame.render || sample.frame.render->width != render_width) return 20;
     if (sample.depth.Get() != targets.depth.Get()) return 21;
@@ -92,6 +116,7 @@ int main() {
     game_frame(gpu, targets, true);
     if (result == 0 && tracker.finish_frame(gpu.context.Get()).camera) result = 30;
     if (result == 0) result = observe(gpu, targets, backbuffer.Get());
+    if (result == 0) result = observe_resolve(gpu, targets, backbuffer.Get());
     DestroyWindow(window);
     return result;
 }

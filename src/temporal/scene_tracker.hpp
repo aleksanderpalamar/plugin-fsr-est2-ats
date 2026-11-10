@@ -2,6 +2,7 @@
 
 #include "temporal/camera_capture.hpp"
 #include "temporal/pass_listener.hpp"
+#include "temporal/resolve_capture.hpp"
 #include "temporal/scene_recognizer.hpp"
 
 #include <d3d11.h>
@@ -16,6 +17,7 @@ struct SceneSample {
     Microsoft::WRL::ComPtr<ID3D11Buffer> camera;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> depth;
     std::vector<CameraObservation> observations;
+    std::vector<FrameFloats> resolves;
 };
 
 class SceneTracker {
@@ -36,6 +38,7 @@ private:
     std::uint64_t index_ = 0;
     SceneRecognizer recognizer_;
     CameraCapture camera_;
+    ResolveCapture resolve_;
     PassListener* listener_ = nullptr;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> depth_;
 };

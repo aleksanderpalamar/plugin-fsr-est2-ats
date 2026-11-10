@@ -1,5 +1,6 @@
 add_library(neuralfx_temporal_d3d11 STATIC src/temporal/scene_tracker.cpp src/temporal/camera_capture.cpp
-    src/temporal/scene_hooks.cpp)
+    src/temporal/scene_hooks.cpp src/temporal/bound_constants.cpp src/temporal/staging_ring.cpp
+    src/temporal/resolve_capture.cpp)
 target_compile_features(neuralfx_temporal_d3d11 PUBLIC cxx_std_20)
 target_compile_definitions(neuralfx_temporal_d3d11 PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
 target_include_directories(neuralfx_temporal_d3d11 PUBLIC src)

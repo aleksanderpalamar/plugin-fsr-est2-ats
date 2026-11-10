@@ -86,7 +86,7 @@ set(NEURALFX_MOTION_PROBE_SOURCES
     src/diagnostics/motion_probe_targets.cpp
     src/diagnostics/constant_dump.cpp
     src/diagnostics/probe_journal.cpp
-    src/renderer/camera_reprojection_pass.cpp
+    src/renderer/resolve_frame_pass.cpp
     src/renderer/camera_frame_slot.cpp
     src/renderer/compute_state.cpp
     src/renderer/camera_motion_pass.cpp

@@ -5,9 +5,9 @@
 #include "diagnostics/probe_journal.hpp"
 #include "diagnostics/trace_trigger.hpp"
 #include "renderer/camera_motion_pass.hpp"
-#include "renderer/camera_reprojection_pass.hpp"
 #include "renderer/context_state.hpp"
 #include "renderer/motion_overlay_pass.hpp"
+#include "renderer/resolve_frame_pass.hpp"
 #include "temporal/observation_review.hpp"
 #include "temporal/resolve_review.hpp"
 #include "temporal/scene_tracker.hpp"
@@ -32,7 +32,7 @@ struct Probe {
     temporal::TemporalHistory history;
     ProbeJournal journal;
     ConstantDump dump;
-    CameraReprojectionPass reprojection;
+    ResolveFramePass resolve_frame;
     CameraMotionPass motion;
     MotionOverlayPass overlay;
     MotionProbeTargets targets;
@@ -59,7 +59,7 @@ std::optional<Swapchain> swapchain_of(IDXGISwapChain* swapchain) noexcept {
 
 bool initialize(Probe& state, ID3D11Device* device) noexcept {
     auto shaders = module_directory() / L"NeuralFX" / L"shaders";
-    return SUCCEEDED(state.reprojection.initialize(device, shaders)) &&
+    return SUCCEEDED(state.resolve_frame.initialize(device, shaders)) &&
         SUCCEEDED(state.motion.initialize(device, shaders)) && SUCCEEDED(state.overlay.initialize(device, shaders));
 }
 
@@ -90,14 +90,14 @@ temporal::ResolveReport review_resolves(const temporal::SceneSample& sample) noe
 }
 
 void draw_overlay(Probe& state, const Swapchain& target, const temporal::SceneSample& sample,
-    temporal::RenderSize size, bool history_valid) noexcept {
+    temporal::RenderSize size) noexcept {
     if (!state.targets.prepare(target.device.Get(), sample.depth.Get(), size)) return;
     D3D11_TEXTURE2D_DESC description{};
     target.backbuffer->GetDesc(&description);
     ComPtr<ID3D11RenderTargetView> output;
     if (FAILED(target.device->CreateRenderTargetView(target.backbuffer.Get(), nullptr, &output))) return;
     ContextState saved(target.context.Get());
-    auto* camera = state.reprojection.run(target.context.Get(), sample.camera.Get(), size, history_valid);
+    auto* camera = state.resolve_frame.run(target.context.Get(), sample.resolve.Get(), size);
     if (!camera) return;
     state.targets.copy_depth(target.context.Get(), sample.depth.Get());
     state.motion.render(target.context.Get(), {state.targets.depth(), camera, state.targets.motion_target()}, size);
@@ -115,8 +115,8 @@ void inspect(Probe& state, const Swapchain& target) {
     state.journal.record(decision, {sample.index, sample.frame.render, cpu_us, sample.times}, report,
         review_resolves(sample));
     for (const auto& line : state.dump.finish_frame()) log(line);
-    if (!state.ready || !decision.jitter || !sample.camera || !sample.depth) return;
-    draw_overlay(state, target, sample, *sample.frame.render, decision.status == temporal::TemporalStatus::Ready);
+    if (!state.ready || !sample.resolve || !sample.depth || !sample.frame.render) return;
+    draw_overlay(state, target, sample, *sample.frame.render);
 }
 
 void poll_constant_request(Probe& state) {

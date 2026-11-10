@@ -99,7 +99,9 @@ std::string resolve_line(const temporal::ResolveSample& sample) {
 }
 
 std::string resolve_rejection_line(const temporal::RejectedResolve& rejected) {
-    return "Motion resolve rejected frame=" + std::to_string(rejected.frame) + " reason=" +
+    std::string line = "Motion resolve rejected frame=" + std::to_string(rejected.frame) + " reason=" +
         resolve_fault_name(rejected.fault);
+    if (!rejected.index) return line;
+    return line + " index=" + std::to_string(*rejected.index) + " value=" + decimal(rejected.value);
 }
 }

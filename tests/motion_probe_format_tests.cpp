@@ -1,5 +1,6 @@
 #include "diagnostics/motion_probe_format.hpp"
 
+#include <cmath>
 #include <iostream>
 
 using namespace neuralfx;
@@ -92,8 +93,11 @@ int resolve_case() {
     code = expect(diagnostics::resolve_rejection_line({8, temporal::ResolveFault::TooShort}),
         "Motion resolve rejected frame=8 reason=too-short", 83);
     if (code) return code;
-    return expect(diagnostics::resolve_rejection_line({9, temporal::ResolveFault::NotFinite}),
+    code = expect(diagnostics::resolve_rejection_line({9, temporal::ResolveFault::NotFinite}),
         "Motion resolve rejected frame=9 reason=not-finite", 84);
+    if (code) return code;
+    return expect(diagnostics::resolve_rejection_line({10, temporal::ResolveFault::NotFinite, 33u, std::nanf("")}),
+        "Motion resolve rejected frame=10 reason=not-finite index=33 value=nan", 85);
 }
 
 int main() {

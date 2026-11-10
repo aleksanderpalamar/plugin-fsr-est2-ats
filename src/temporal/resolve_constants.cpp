@@ -11,10 +11,6 @@ constexpr std::size_t jitter_at = 32;
 constexpr std::size_t size_at = 44;
 constexpr std::size_t used_floats = size_at + 2;
 
-bool all_finite(std::span<const float> values) {
-    return std::all_of(values.begin(), values.end(), [](float value) { return std::isfinite(value); });
-}
-
 float row(std::span<const float> values, std::size_t index, std::size_t column) {
     return values[rows_at + index * 4 + column];
 }
@@ -36,9 +32,15 @@ float rotation_degrees(std::span<const float> values) {
 }
 }
 
+std::optional<std::size_t> first_non_finite(std::span<const float> values) noexcept {
+    for (std::size_t index = 0; index < std::min(values.size(), used_floats); ++index)
+        if (!std::isfinite(values[index])) return index;
+    return std::nullopt;
+}
+
 std::variant<ResolveFrame, ResolveFault> evaluate_resolve(std::span<const float> values, RenderSize expected) noexcept {
     if (values.size() < used_floats) return ResolveFault::TooShort;
-    if (!all_finite(values.first(used_floats))) return ResolveFault::NotFinite;
+    if (first_non_finite(values)) return ResolveFault::NotFinite;
     if (values[size_at] != static_cast<float>(expected.width) || values[size_at + 1] != static_cast<float>(expected.height))
         return ResolveFault::SizeMismatch;
     Jitter jitter{values[jitter_at] * static_cast<float>(expected.width),

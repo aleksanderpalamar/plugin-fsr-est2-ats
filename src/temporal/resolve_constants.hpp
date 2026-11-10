@@ -3,6 +3,7 @@
 #include "temporal/projection_jitter.hpp"
 
 #include <cstddef>
+#include <optional>
 #include <span>
 #include <variant>
 
@@ -17,5 +18,6 @@ struct ResolveFrame {
 
 enum class ResolveFault { TooShort, NotFinite, SizeMismatch };
 
+std::optional<std::size_t> first_non_finite(std::span<const float> values) noexcept;
 std::variant<ResolveFrame, ResolveFault> evaluate_resolve(std::span<const float> values, RenderSize expected) noexcept;
 }

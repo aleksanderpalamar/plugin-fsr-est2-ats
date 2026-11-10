@@ -1,7 +1,9 @@
 #include "resolve_values.hpp"
 #include "temporal/resolve_review.hpp"
 
+#include <cmath>
 #include <iostream>
+#include <limits>
 
 using namespace neuralfx::temporal;
 using namespace resolve_test;
@@ -29,6 +31,16 @@ int mixed_case() {
     return report.rejected[1].fault == ResolveFault::TooShort ? 0 : 14;
 }
 
+int non_finite_case() {
+    Values broken = game_values();
+    broken[33] = std::numeric_limits<float>::infinity();
+    std::vector<FrameFloats> reads{read(9, broken)};
+    auto report = review_resolves(reads, size);
+    if (report.rejected.size() != 1 || report.rejected[0].fault != ResolveFault::NotFinite) return 40;
+    if (report.rejected[0].index != 33u) return 41;
+    return std::isinf(report.rejected[0].value) ? 0 : 42;
+}
+
 int notable_case() {
     ResolveSample still{1, ResolveFrame{{0.0585f, 0.1619f}, 0.001f, 0.01f}, 11u};
     if (is_notable(still)) return 20;
@@ -50,7 +62,7 @@ int empty_case() {
 }
 
 int main() {
-    for (auto test_case : {mixed_case, notable_case, empty_case}) {
+    for (auto test_case : {mixed_case, non_finite_case, notable_case, empty_case}) {
         if (int code = test_case(); code != 0) {
             std::cerr << "resolve_review case failed: " << code << '\n';
             return code;

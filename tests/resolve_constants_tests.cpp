@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath>
 #include <iostream>
+#include <limits>
 
 using namespace neuralfx::temporal;
 
@@ -73,8 +74,22 @@ int fault_case() {
 }
 }
 
+int non_finite_case() {
+    Values values = game_values();
+    if (first_non_finite(values)) return 50;
+    values[33] = std::numeric_limits<float>::infinity();
+    values[20] = std::nanf("");
+    auto found = first_non_finite(values);
+    if (found != 20u) return 51;
+    values[20] = 0.0f;
+    if (first_non_finite(values) != 33u) return 52;
+    values[33] = 0.0f;
+    values[60] = std::nanf("");
+    return first_non_finite(values) ? 53 : 0;
+}
+
 int main() {
-    for (auto test_case : {logged_frame_case, driving_case, small_turn_case, fault_case}) {
+    for (auto test_case : {logged_frame_case, driving_case, small_turn_case, fault_case, non_finite_case}) {
         if (int code = test_case(); code != 0) {
             std::cerr << "resolve_constants case failed: " << code << '\n';
             return code;

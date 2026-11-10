@@ -18,6 +18,8 @@ struct ResolveSample {
 struct RejectedResolve {
     std::uint64_t frame = 0;
     ResolveFault fault = ResolveFault::TooShort;
+    std::optional<std::size_t> index = std::nullopt;
+    float value = 0.0f;
 };
 
 struct ResolveReport {

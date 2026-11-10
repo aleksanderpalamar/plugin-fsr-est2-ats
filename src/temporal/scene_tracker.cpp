@@ -59,6 +59,7 @@ void SceneTracker::start_frame(ID3D11Texture2D* backbuffer) noexcept {
     recognizer_.begin_frame(*surface);
     ++index_;
     captured_ = false;
+    resolved_ = false;
     capture_us_ = 0;
     depth_.Reset();
 }
@@ -82,7 +83,7 @@ void SceneTracker::draw(ID3D11DeviceContext* context) noexcept {
     auto action = recognizer_.draw();
     auto start = Clock::now();
     if (action == DrawAction::ReadCamera) captured_ = camera_.capture(context, index_);
-    if (action == DrawAction::ReadResolve) resolve_.capture(context, index_);
+    if (action == DrawAction::ReadResolve) resolved_ = resolve_.capture(context, index_);
     if (action != DrawAction::None) capture_us_ += microseconds_since(start);
     if (action == DrawAction::None || !listener_) return;
     listener_->first_draw(context, index_,
@@ -106,6 +107,7 @@ SceneSample SceneTracker::finish_frame(ID3D11DeviceContext* context) noexcept {
     sample.times.resolve_collect_us = microseconds_since(start);
     sample.times.capture_us = capture_us_;
     if (captured_) sample.camera = camera_.camera();
+    if (resolved_) sample.resolve = resolve_.resolve();
     return sample;
 }
 

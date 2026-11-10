@@ -18,6 +18,7 @@ struct SceneSample {
     Microsoft::WRL::ComPtr<ID3D11Buffer> camera;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> depth;
     std::vector<CameraObservation> observations;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> resolve;
     std::vector<FrameFloats> resolves;
     StageTimes times;
 };
@@ -37,6 +38,7 @@ private:
     std::atomic_bool active_{false};
     bool recording_ = false;
     bool captured_ = false;
+    bool resolved_ = false;
     std::int64_t capture_us_ = 0;
     std::uint64_t index_ = 0;
     SceneRecognizer recognizer_;

@@ -62,13 +62,29 @@ int observe_resolve(Device& gpu, const Targets& targets, ID3D11Texture2D* backbu
     return 52;
 }
 
+std::optional<std::vector<float>> read_resolve(Device& gpu, ID3D11Buffer* resolve) {
+    D3D11_BUFFER_DESC description{256, D3D11_USAGE_STAGING, 0, D3D11_CPU_ACCESS_READ, 0, 0};
+    ComPtr<ID3D11Buffer> staging;
+    if (FAILED(gpu.device->CreateBuffer(&description, nullptr, &staging))) return std::nullopt;
+    gpu.context->CopyResource(staging.Get(), resolve);
+    D3D11_MAPPED_SUBRESOURCE mapped{};
+    if (FAILED(gpu.context->Map(staging.Get(), 0, D3D11_MAP_READ, 0, &mapped))) return std::nullopt;
+    const auto* values = static_cast<const float*>(mapped.pData);
+    std::vector<float> copied(values, values + 64);
+    gpu.context->Unmap(staging.Get(), 0);
+    return copied;
+}
+
 int check(Device& gpu, const temporal::SceneSample& sample, const Targets& targets) {
     if (!sample.frame.render || sample.frame.render->width != render_width) return 20;
     if (sample.depth.Get() != targets.depth.Get()) return 21;
     if (!sample.camera) return 22;
     auto copied = read_camera(gpu, sample.camera.Get());
     if (!copied || !holds_values(*copied)) return 23;
-    return sample.frame.temporal_resolve ? 0 : 25;
+    if (!sample.frame.temporal_resolve) return 25;
+    if (!sample.resolve) return 26;
+    auto resolve = read_resolve(gpu, sample.resolve.Get());
+    return resolve && holds_resolve(*resolve) ? 0 : 27;
 }
 
 int observe(Device& gpu, const Targets& targets, ID3D11Texture2D* backbuffer) {

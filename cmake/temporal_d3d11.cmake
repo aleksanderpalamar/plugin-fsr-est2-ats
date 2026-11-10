@@ -38,6 +38,20 @@ target_link_libraries(neuralfx_camera_reprojection_pass_tests PRIVATE neuralfx_t
 add_dependencies(neuralfx_camera_reprojection_pass_tests neuralfx_runtime_assets)
 add_test(NAME neuralfx_camera_reprojection_pass_tests COMMAND neuralfx_camera_reprojection_pass_tests)
 
+add_executable(neuralfx_depth_to_float_pass_tests
+    tests/depth_to_float_pass_tests.cpp
+    src/renderer/depth_to_float_pass.cpp
+    src/renderer/fullscreen_draw.cpp
+    src/gpu/shader_compiler.cpp
+    src/common/logger.cpp
+)
+target_compile_features(neuralfx_depth_to_float_pass_tests PRIVATE cxx_std_20)
+target_compile_definitions(neuralfx_depth_to_float_pass_tests PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_include_directories(neuralfx_depth_to_float_pass_tests PRIVATE src)
+target_link_libraries(neuralfx_depth_to_float_pass_tests PRIVATE neuralfx_temporal d3d11 ${D3DCOMPILER_LIBRARY})
+add_dependencies(neuralfx_depth_to_float_pass_tests neuralfx_runtime_assets)
+add_test(NAME neuralfx_depth_to_float_pass_tests COMMAND neuralfx_depth_to_float_pass_tests)
+
 add_executable(neuralfx_resolve_frame_pass_tests
     tests/resolve_frame_pass_tests.cpp
     src/renderer/resolve_frame_pass.cpp

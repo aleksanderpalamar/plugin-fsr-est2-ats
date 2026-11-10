@@ -112,8 +112,15 @@ struct RecordingListener final : temporal::PassListener {
     temporal::DrawDecision output_decision = temporal::DrawDecision::Proceed;
     std::vector<temporal::PassEvent> events;
 
-    temporal::DrawDecision first_draw(ID3D11DeviceContext*, const temporal::PassEvent& event) noexcept override {
+    bool draws_inside = false;
+
+    temporal::DrawDecision first_draw(ID3D11DeviceContext* context, const temporal::PassEvent& event) noexcept override {
         events.push_back(event);
+        if (draws_inside) {
+            ID3D11RenderTargetView* none = nullptr;
+            context->OMSetRenderTargets(1, &none, nullptr);
+            context->DrawIndexed(3, 0, 0);
+        }
         return event.role == temporal::PassRole::Output ? output_decision : temporal::DrawDecision::Proceed;
     }
 };
@@ -155,8 +162,10 @@ int listener_events(Device& gpu, const Targets& targets, ID3D11Texture2D* backbu
 int listener_veto(Device& gpu, const Targets& targets, ID3D11Texture2D* backbuffer) {
     auto& tracker = temporal::scene_tracker();
     RecordingListener listener;
+    listener.draws_inside = true;
     tracker.attach(&listener);
     int result = listener_events(gpu, targets, backbuffer, listener);
+    listener.draws_inside = false;
     auto proceeded = result == 0 ? primitives(gpu, targets, backbuffer) : std::nullopt;
     listener.output_decision = temporal::DrawDecision::Skip;
     auto skipped = result == 0 ? primitives(gpu, targets, backbuffer) : std::nullopt;

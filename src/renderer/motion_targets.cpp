@@ -1,7 +1,7 @@
-#include "diagnostics/motion_probe_targets.hpp"
+#include "renderer/motion_targets.hpp"
 #include "renderer/depth_format.hpp"
 
-namespace neuralfx::diagnostics {
+namespace neuralfx {
 namespace {
 using Microsoft::WRL::ComPtr;
 
@@ -31,7 +31,7 @@ D3D11_SHADER_RESOURCE_VIEW_DESC view_description(DXGI_FORMAT format) {
 }
 }
 
-bool MotionProbeTargets::prepare(ID3D11Device* device, ID3D11Texture2D* scene_depth,
+bool MotionTargets::prepare(ID3D11Device* device, ID3D11Texture2D* scene_depth,
     temporal::RenderSize size) noexcept {
     if (!device || !scene_depth) return false;
     D3D11_TEXTURE2D_DESC source{};
@@ -45,11 +45,11 @@ bool MotionProbeTargets::prepare(ID3D11Device* device, ID3D11Texture2D* scene_de
     return true;
 }
 
-void MotionProbeTargets::copy_depth(ID3D11DeviceContext* context, ID3D11Texture2D* scene_depth) noexcept {
+void MotionTargets::copy_depth(ID3D11DeviceContext* context, ID3D11Texture2D* scene_depth) noexcept {
     if (context && scene_depth && depth_) context->CopyResource(depth_.Get(), scene_depth);
 }
 
-bool MotionProbeTargets::create_depth(ID3D11Device* device, const D3D11_TEXTURE2D_DESC& source) noexcept {
+bool MotionTargets::create_depth(ID3D11Device* device, const D3D11_TEXTURE2D_DESC& source) noexcept {
     depth_view_.Reset();
     depth_.Reset();
     auto formats = depth_format(source.Format);
@@ -62,15 +62,15 @@ bool MotionProbeTargets::create_depth(ID3D11Device* device, const D3D11_TEXTURE2
     return true;
 }
 
-bool MotionProbeTargets::create_motion(ID3D11Device* device, temporal::RenderSize size) noexcept {
+bool MotionTargets::create_motion(ID3D11Device* device, temporal::RenderSize size) noexcept {
     motion_view_.Reset();
     motion_target_.Reset();
     auto description = texture_description(size.width, size.height, DXGI_FORMAT_R16G16_FLOAT,
         D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
-    ComPtr<ID3D11Texture2D> motion;
-    if (FAILED(device->CreateTexture2D(&description, nullptr, &motion))) return false;
-    if (FAILED(device->CreateRenderTargetView(motion.Get(), nullptr, &motion_target_))) return false;
-    if (FAILED(device->CreateShaderResourceView(motion.Get(), nullptr, &motion_view_))) return false;
+    motion_.Reset();
+    if (FAILED(device->CreateTexture2D(&description, nullptr, &motion_))) return false;
+    if (FAILED(device->CreateRenderTargetView(motion_.Get(), nullptr, &motion_target_))) return false;
+    if (FAILED(device->CreateShaderResourceView(motion_.Get(), nullptr, &motion_view_))) return false;
     size_ = size;
     return true;
 }

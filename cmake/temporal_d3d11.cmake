@@ -97,7 +97,7 @@ add_test(NAME neuralfx_motion_overlay_pass_tests COMMAND neuralfx_motion_overlay
 
 set(NEURALFX_MOTION_PROBE_SOURCES
     src/diagnostics/motion_probe.cpp
-    src/diagnostics/motion_probe_targets.cpp
+    src/renderer/motion_targets.cpp
     src/diagnostics/constant_dump.cpp
     src/diagnostics/probe_journal.cpp
     src/renderer/resolve_frame_pass.cpp

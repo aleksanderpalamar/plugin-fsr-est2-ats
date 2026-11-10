@@ -1,7 +1,7 @@
 #include "diagnostics/motion_probe.hpp"
 #include "diagnostics/constant_dump.hpp"
 #include "diagnostics/motion_probe_format.hpp"
-#include "diagnostics/motion_probe_targets.hpp"
+#include "renderer/motion_targets.hpp"
 #include "diagnostics/probe_journal.hpp"
 #include "diagnostics/trace_trigger.hpp"
 #include "renderer/camera_motion_pass.hpp"
@@ -35,7 +35,7 @@ struct Probe {
     ResolveFramePass resolve_frame;
     CameraMotionPass motion;
     MotionOverlayPass overlay;
-    MotionProbeTargets targets;
+    MotionTargets targets;
 };
 
 struct Swapchain {

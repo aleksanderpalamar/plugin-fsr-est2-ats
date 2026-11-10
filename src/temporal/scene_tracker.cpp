@@ -10,6 +10,16 @@ namespace {
 using Microsoft::WRL::ComPtr;
 using Clock = std::chrono::steady_clock;
 
+thread_local bool inside_listener = false;
+
+class ListenerScope {
+public:
+    ListenerScope() noexcept { inside_listener = true; }
+    ~ListenerScope() { inside_listener = false; }
+    ListenerScope(const ListenerScope&) = delete;
+    ListenerScope& operator=(const ListenerScope&) = delete;
+};
+
 std::int64_t microseconds_since(Clock::time_point start) {
     return std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - start).count();
 }
@@ -66,7 +76,7 @@ void SceneTracker::start_frame(ID3D11Texture2D* backbuffer) noexcept {
 }
 
 void SceneTracker::targets_bound(ID3D11DeviceContext* context) noexcept {
-    if (!active()) return;
+    if (!active() || inside_listener) return;
     std::lock_guard lock(mutex_);
     if (!recording_) return;
     try {
@@ -78,7 +88,7 @@ void SceneTracker::targets_bound(ID3D11DeviceContext* context) noexcept {
 }
 
 DrawDecision SceneTracker::draw(ID3D11DeviceContext* context) noexcept {
-    if (!active()) return DrawDecision::Proceed;
+    if (!active() || inside_listener) return DrawDecision::Proceed;
     std::lock_guard lock(mutex_);
     if (!recording_) return DrawDecision::Proceed;
     auto action = recognizer_.draw();
@@ -100,6 +110,7 @@ DrawDecision SceneTracker::notify(ID3D11DeviceContext* context, DrawAction actio
     if (action == DrawAction::ReadResolve) event.role = PassRole::TemporalResolve;
     if (action == DrawAction::ReadOutput) event.role = PassRole::Output;
     auto decision = DrawDecision::Proceed;
+    ListenerScope scope;
     for (auto* listener : listeners_)
         if (listener->first_draw(context, event) == DrawDecision::Skip) decision = DrawDecision::Skip;
     return decision;

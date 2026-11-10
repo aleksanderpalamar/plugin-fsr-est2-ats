@@ -1,6 +1,6 @@
 #pragma once
 
-#include "renderer/camera_frame.hpp"
+#include "renderer/camera_frame_slot.hpp"
 #include "temporal/projection_jitter.hpp"
 
 #include <d3d11.h>
@@ -17,17 +17,9 @@ public:
     void reset() noexcept;
 
 private:
-    struct Slot {
-        Microsoft::WRL::ComPtr<ID3D11Buffer> buffer;
-        Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view;
-        Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> output;
-    };
-
-    HRESULT create_slot(ID3D11Device* device, Slot& slot);
-
     Microsoft::WRL::ComPtr<ID3D11ComputeShader> shader_;
     Microsoft::WRL::ComPtr<ID3D11Buffer> parameters_;
-    std::array<Slot, 2> slots_;
+    std::array<CameraFrameSlot, 2> slots_;
     std::size_t current_ = 0;
 };
 }

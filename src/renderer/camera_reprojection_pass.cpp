@@ -23,22 +23,9 @@ HRESULT CameraReprojectionPass::initialize(ID3D11Device* device, const std::file
     result = device->CreateBuffer(&description, nullptr, &parameters_);
     for (auto& slot : slots_) {
         if (FAILED(result)) return result;
-        result = create_slot(device, slot);
+        result = slot.create(device);
     }
     return result;
-}
-
-HRESULT CameraReprojectionPass::create_slot(ID3D11Device* device, Slot& slot) {
-    D3D11_BUFFER_DESC description{sizeof(GpuCameraFrame), D3D11_USAGE_DEFAULT,
-        D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, 0, D3D11_RESOURCE_MISC_BUFFER_STRUCTURED,
-        sizeof(GpuCameraFrame)};
-    GpuCameraFrame empty{};
-    D3D11_SUBRESOURCE_DATA data{&empty, 0, 0};
-    HRESULT result = device->CreateBuffer(&description, &data, &slot.buffer);
-    if (FAILED(result)) return result;
-    result = device->CreateShaderResourceView(slot.buffer.Get(), nullptr, &slot.view);
-    if (FAILED(result)) return result;
-    return device->CreateUnorderedAccessView(slot.buffer.Get(), nullptr, &slot.output);
 }
 
 ID3D11ShaderResourceView* CameraReprojectionPass::run(ID3D11DeviceContext* context, ID3D11Buffer* game_camera,

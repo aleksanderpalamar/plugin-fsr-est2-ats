@@ -26,6 +26,7 @@ add_test(NAME neuralfx_camera_motion_pass_tests COMMAND neuralfx_camera_motion_p
 add_executable(neuralfx_camera_reprojection_pass_tests
     tests/camera_reprojection_pass_tests.cpp
     src/renderer/camera_reprojection_pass.cpp
+    src/renderer/camera_frame_slot.cpp
     src/renderer/compute_state.cpp
     src/gpu/shader_compiler.cpp
     src/common/logger.cpp
@@ -36,6 +37,21 @@ target_include_directories(neuralfx_camera_reprojection_pass_tests PRIVATE src)
 target_link_libraries(neuralfx_camera_reprojection_pass_tests PRIVATE neuralfx_temporal d3d11 ${D3DCOMPILER_LIBRARY})
 add_dependencies(neuralfx_camera_reprojection_pass_tests neuralfx_runtime_assets)
 add_test(NAME neuralfx_camera_reprojection_pass_tests COMMAND neuralfx_camera_reprojection_pass_tests)
+
+add_executable(neuralfx_resolve_frame_pass_tests
+    tests/resolve_frame_pass_tests.cpp
+    src/renderer/resolve_frame_pass.cpp
+    src/renderer/camera_frame_slot.cpp
+    src/renderer/compute_state.cpp
+    src/gpu/shader_compiler.cpp
+    src/common/logger.cpp
+)
+target_compile_features(neuralfx_resolve_frame_pass_tests PRIVATE cxx_std_20)
+target_compile_definitions(neuralfx_resolve_frame_pass_tests PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_include_directories(neuralfx_resolve_frame_pass_tests PRIVATE src)
+target_link_libraries(neuralfx_resolve_frame_pass_tests PRIVATE neuralfx_temporal d3d11 ${D3DCOMPILER_LIBRARY})
+add_dependencies(neuralfx_resolve_frame_pass_tests neuralfx_runtime_assets)
+add_test(NAME neuralfx_resolve_frame_pass_tests COMMAND neuralfx_resolve_frame_pass_tests)
 
 add_executable(neuralfx_scene_tracker_tests
     tests/scene_tracker_tests.cpp
@@ -71,6 +87,7 @@ set(NEURALFX_MOTION_PROBE_SOURCES
     src/diagnostics/constant_dump.cpp
     src/diagnostics/probe_journal.cpp
     src/renderer/camera_reprojection_pass.cpp
+    src/renderer/camera_frame_slot.cpp
     src/renderer/compute_state.cpp
     src/renderer/camera_motion_pass.cpp
     src/renderer/motion_overlay_pass.cpp

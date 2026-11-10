@@ -74,6 +74,25 @@ int fault_case() {
 }
 }
 
+int field_of_view_case() {
+    Values values = game_values();
+    values[5] = 2.2190392f;
+    auto result = evaluate_resolve(values, size);
+    const auto* frame = frame_of(result);
+    if (!frame || !close_to(frame->vertical_fov, 0.84687f, 5e-4f)) return 60;
+    values[5] = 1.0f;
+    result = evaluate_resolve(values, size);
+    frame = frame_of(result);
+    if (!frame || !close_to(frame->vertical_fov, 1.5708f, 5e-4f)) return 61;
+    for (float invalid : {0.0f, -2.0f}) {
+        values[5] = invalid;
+        result = evaluate_resolve(values, size);
+        frame = frame_of(result);
+        if (!frame || frame->vertical_fov != 0.0f) return 62;
+    }
+    return 0;
+}
+
 int non_finite_case() {
     Values values = game_values();
     if (first_non_finite(values)) return 50;
@@ -89,7 +108,7 @@ int non_finite_case() {
 }
 
 int main() {
-    for (auto test_case : {logged_frame_case, driving_case, small_turn_case, fault_case, non_finite_case}) {
+    for (auto test_case : {logged_frame_case, driving_case, small_turn_case, fault_case, field_of_view_case, non_finite_case}) {
         if (int code = test_case(); code != 0) {
             std::cerr << "resolve_constants case failed: " << code << '\n';
             return code;

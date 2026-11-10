@@ -14,6 +14,7 @@ struct ResolveFrame {
     Jitter jitter;
     float move_m = 0.0f;
     float turn_deg = 0.0f;
+    float vertical_fov = 0.0f;
 };
 
 enum class ResolveFault { TooShort, NotFinite, SizeMismatch };

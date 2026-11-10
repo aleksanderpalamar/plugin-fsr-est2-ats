@@ -8,6 +8,7 @@ namespace {
 constexpr double radians_to_degrees = 57.29577951308232;
 constexpr std::size_t rows_at = 16;
 constexpr std::size_t jitter_at = 32;
+constexpr std::size_t scale_y_at = 5;
 constexpr std::size_t size_at = 44;
 constexpr std::size_t used_floats = size_at + 2;
 
@@ -30,6 +31,12 @@ float rotation_degrees(std::span<const float> values) {
     double trace = static_cast<double>(row(values, 0, 0)) + row(values, 1, 1) + row(values, 2, 2);
     return static_cast<float>(std::atan2(sine, (trace - 1.0) * 0.5) * radians_to_degrees);
 }
+
+float vertical_fov(std::span<const float> values) {
+    float scale = values[scale_y_at];
+    if (!(scale > 0.0f)) return 0.0f;
+    return static_cast<float>(2.0 * std::atan(1.0 / static_cast<double>(scale)));
+}
 }
 
 std::optional<std::size_t> first_non_finite(std::span<const float> values) noexcept {
@@ -45,6 +52,6 @@ std::variant<ResolveFrame, ResolveFault> evaluate_resolve(std::span<const float>
         return ResolveFault::SizeMismatch;
     Jitter jitter{values[jitter_at] * static_cast<float>(expected.width),
         values[jitter_at + 1] * static_cast<float>(expected.height)};
-    return ResolveFrame{jitter, translation_length(values), rotation_degrees(values)};
+    return ResolveFrame{jitter, translation_length(values), rotation_degrees(values), vertical_fov(values)};
 }
 }

@@ -43,6 +43,10 @@ DrawAction SceneRecognizer::draw() noexcept {
         frame_.resolve_drawn = true;
         return DrawAction::ReadResolve;
     }
+    if (current_ == PassRole::Output && !frame_.output_drawn) {
+        frame_.output_drawn = true;
+        return DrawAction::ReadOutput;
+    }
     return DrawAction::None;
 }
 

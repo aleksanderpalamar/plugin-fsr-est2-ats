@@ -40,7 +40,7 @@ std::vector<Step> frame_steps(bool temporal) {
         steps.push_back({{resolve.begin(), resolve.end()}, std::nullopt, PassRole::TemporalResolve,
             {DrawAction::ReadResolve, DrawAction::None}});
     steps.push_back({{tonemapped}, std::nullopt, PassRole::Other, {DrawAction::None}});
-    steps.push_back({{backbuffer}, std::nullopt, PassRole::Output, {DrawAction::None, DrawAction::None}});
+    steps.push_back({{backbuffer}, std::nullopt, PassRole::Output, {DrawAction::ReadOutput, DrawAction::None}});
     return steps;
 }
 
@@ -68,6 +68,18 @@ int plain_frame_case() {
     return run_frame(recognizer, false, 30);
 }
 
+int output_once_case() {
+    SceneRecognizer recognizer;
+    recognizer.begin_frame(backbuffer);
+    if (recognizer.bind(std::array{backbuffer}, std::nullopt) != PassRole::Output) return 50;
+    if (recognizer.draw() != DrawAction::ReadOutput || recognizer.draw() != DrawAction::None) return 51;
+    if (recognizer.bind(std::array{backbuffer}, std::nullopt) != PassRole::Output) return 52;
+    if (recognizer.draw() != DrawAction::None || !recognizer.frame().output_drawn) return 53;
+    recognizer.begin_frame(backbuffer);
+    recognizer.bind(std::array{backbuffer}, std::nullopt);
+    return recognizer.draw() == DrawAction::ReadOutput ? 0 : 54;
+}
+
 int unknown_frame_case() {
     SceneRecognizer recognizer;
     recognizer.begin_frame(backbuffer);
@@ -82,7 +94,7 @@ int unknown_frame_case() {
 }
 
 int main() {
-    for (auto test_case : {temporal_frame_case, plain_frame_case, unknown_frame_case}) {
+    for (auto test_case : {temporal_frame_case, plain_frame_case, output_once_case, unknown_frame_case}) {
         if (int code = test_case(); code != 0) return code;
     }
     return 0;

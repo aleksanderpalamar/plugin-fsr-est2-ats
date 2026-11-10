@@ -1,5 +1,6 @@
 #include "temporal/scene_tracker.hpp"
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <vector>
@@ -76,23 +77,47 @@ void SceneTracker::targets_bound(ID3D11DeviceContext* context) noexcept {
     }
 }
 
-void SceneTracker::draw(ID3D11DeviceContext* context) noexcept {
-    if (!active()) return;
+DrawDecision SceneTracker::draw(ID3D11DeviceContext* context) noexcept {
+    if (!active()) return DrawDecision::Proceed;
     std::lock_guard lock(mutex_);
-    if (!recording_) return;
+    if (!recording_) return DrawDecision::Proceed;
     auto action = recognizer_.draw();
     auto start = Clock::now();
     if (action == DrawAction::ReadCamera) captured_ = camera_.capture(context, index_);
     if (action == DrawAction::ReadResolve) resolved_ = resolve_.capture(context, index_);
     if (action != DrawAction::None) capture_us_ += microseconds_since(start);
-    if (action == DrawAction::None || !listener_) return;
-    listener_->first_draw(context, index_,
-        action == DrawAction::ReadCamera ? PassRole::SceneLighting : PassRole::TemporalResolve);
+    if (action == DrawAction::None || listeners_.empty()) return DrawDecision::Proceed;
+    return notify(context, action);
 }
 
-void SceneTracker::set_listener(PassListener* listener) noexcept {
+DrawDecision SceneTracker::notify(ID3D11DeviceContext* context, DrawAction action) {
+    PassEvent event;
+    event.frame = index_;
+    event.render = recognizer_.frame().render;
+    event.depth = depth_;
+    if (resolved_) event.resolve = resolve_.resolve();
+    if (action == DrawAction::ReadCamera) event.role = PassRole::SceneLighting;
+    if (action == DrawAction::ReadResolve) event.role = PassRole::TemporalResolve;
+    if (action == DrawAction::ReadOutput) event.role = PassRole::Output;
+    auto decision = DrawDecision::Proceed;
+    for (auto* listener : listeners_)
+        if (listener->first_draw(context, event) == DrawDecision::Skip) decision = DrawDecision::Skip;
+    return decision;
+}
+
+void SceneTracker::attach(PassListener* listener) noexcept {
     std::lock_guard lock(mutex_);
-    listener_ = listener;
+    if (listener && std::find(listeners_.begin(), listeners_.end(), listener) == listeners_.end()) {
+        try {
+            listeners_.push_back(listener);
+        } catch (...) {
+        }
+    }
+}
+
+void SceneTracker::detach(PassListener* listener) noexcept {
+    std::lock_guard lock(mutex_);
+    listeners_.erase(std::remove(listeners_.begin(), listeners_.end(), listener), listeners_.end());
 }
 
 SceneSample SceneTracker::finish_frame(ID3D11DeviceContext* context) noexcept {

@@ -15,16 +15,17 @@ void ConstantDump::arm(std::uint32_t frames) noexcept {
     remaining_ = frames;
 }
 
-void ConstantDump::first_draw(ID3D11DeviceContext* context, std::uint64_t frame, temporal::PassRole role) noexcept {
+temporal::DrawDecision ConstantDump::first_draw(ID3D11DeviceContext* context, const temporal::PassEvent& event) noexcept {
     std::lock_guard lock(mutex_);
-    if (remaining_ == 0) return;
+    if (remaining_ == 0) return temporal::DrawDecision::Proceed;
     try {
         for (auto stage : {ShaderStage::Vertex, ShaderStage::Pixel})
             for (const auto& snapshot : read_constants(context, stage, dumped_slots, dumped_floats))
-                for (auto& line : constant_lines(frame, role, snapshot)) lines_.push_back(std::move(line));
+                for (auto& line : constant_lines(event.frame, event.role, snapshot)) lines_.push_back(std::move(line));
     } catch (...) {
         lines_.clear();
     }
+    return temporal::DrawDecision::Proceed;
 }
 
 std::vector<std::string> ConstantDump::finish_frame() noexcept {

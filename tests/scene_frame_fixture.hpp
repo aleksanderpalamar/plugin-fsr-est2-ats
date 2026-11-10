@@ -30,6 +30,7 @@ struct Targets {
     ComPtr<ID3D11DepthStencilView> depth_view;
     ComPtr<ID3D11Buffer> camera;
     ComPtr<ID3D11Buffer> resolve;
+    ComPtr<ID3D11RenderTargetView> output;
 };
 
 inline ComPtr<ID3D11Texture2D> scene_texture(ID3D11Device* device, DXGI_FORMAT format, UINT bind) {
@@ -97,5 +98,10 @@ inline void game_frame(Device& gpu, const Targets& targets, bool temporal_resolv
     UINT resolve_count = 16;
     context->PSSetConstantBuffers1(0, 1, &resolve, &resolve_first, &resolve_count);
     bind_and_draw(gpu.context.Get(), targets.lighting, nullptr);
+    if (!targets.output) return;
+    ID3D11RenderTargetView* output = targets.output.Get();
+    gpu.context->OMSetRenderTargets(1, &output, nullptr);
+    gpu.context->DrawIndexed(3, 0, 0);
+    gpu.context->DrawIndexed(3, 0, 0);
 }
 }

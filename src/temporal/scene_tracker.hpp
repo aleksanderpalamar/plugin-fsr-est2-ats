@@ -9,6 +9,7 @@
 #include <d3d11.h>
 #include <atomic>
 #include <mutex>
+#include <vector>
 #include <wrl/client.h>
 
 namespace neuralfx::temporal {
@@ -29,11 +30,14 @@ public:
     bool active() const noexcept { return active_.load(std::memory_order_acquire); }
     void start_frame(ID3D11Texture2D* backbuffer) noexcept;
     void targets_bound(ID3D11DeviceContext* context) noexcept;
-    void draw(ID3D11DeviceContext* context) noexcept;
+    DrawDecision draw(ID3D11DeviceContext* context) noexcept;
     SceneSample finish_frame(ID3D11DeviceContext* context) noexcept;
-    void set_listener(PassListener* listener) noexcept;
+    void attach(PassListener* listener) noexcept;
+    void detach(PassListener* listener) noexcept;
 
 private:
+    DrawDecision notify(ID3D11DeviceContext* context, DrawAction action);
+
     std::mutex mutex_;
     std::atomic_bool active_{false};
     bool recording_ = false;
@@ -44,7 +48,7 @@ private:
     SceneRecognizer recognizer_;
     CameraCapture camera_;
     ResolveCapture resolve_;
-    PassListener* listener_ = nullptr;
+    std::vector<PassListener*> listeners_;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> depth_;
 };
 

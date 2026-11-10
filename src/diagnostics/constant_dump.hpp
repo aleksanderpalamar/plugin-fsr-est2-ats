@@ -11,7 +11,7 @@ namespace neuralfx::diagnostics {
 class ConstantDump final : public temporal::PassListener {
 public:
     void arm(std::uint32_t frames) noexcept;
-    void first_draw(ID3D11DeviceContext* context, std::uint64_t frame, temporal::PassRole role) noexcept override;
+    temporal::DrawDecision first_draw(ID3D11DeviceContext* context, const temporal::PassEvent& event) noexcept override;
     std::vector<std::string> finish_frame() noexcept;
 
 private:

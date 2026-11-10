@@ -9,7 +9,7 @@ struct DrawHook {
     static inline Function original = nullptr;
 
     static void STDMETHODCALLTYPE call(ID3D11DeviceContext* context, Arguments... arguments) noexcept {
-        scene_tracker().draw(context);
+        if (scene_tracker().draw(context) == DrawDecision::Skip) return;
         original(context, arguments...);
     }
 

@@ -74,7 +74,10 @@ void toggle(Probe& state, const Swapchain& target) noexcept {
     }
     if (state.enabled && !state.ready) state.ready = initialize(state, target.device.Get());
     if (state.enabled && !state.ready) log("Motion probe shaders unavailable");
-    temporal::scene_tracker().set_listener(state.enabled ? &state.dump : nullptr);
+    if (state.enabled)
+        temporal::scene_tracker().attach(&state.dump);
+    else
+        temporal::scene_tracker().detach(&state.dump);
     temporal::scene_tracker().set_active(state.enabled);
     log(state.enabled ? "Motion probe enabled" : "Motion probe disabled");
 }

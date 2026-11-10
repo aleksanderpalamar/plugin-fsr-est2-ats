@@ -2,6 +2,7 @@
 #include "scene_frame_fixture.hpp"
 #include "temporal/scene_tracker.hpp"
 
+#include <iostream>
 #include <thread>
 
 using namespace scene_test;
@@ -107,6 +108,69 @@ int observe(Device& gpu, const Targets& targets, ID3D11Texture2D* backbuffer) {
 }
 }
 
+struct RecordingListener final : temporal::PassListener {
+    temporal::DrawDecision output_decision = temporal::DrawDecision::Proceed;
+    std::vector<temporal::PassEvent> events;
+
+    temporal::DrawDecision first_draw(ID3D11DeviceContext*, const temporal::PassEvent& event) noexcept override {
+        events.push_back(event);
+        return event.role == temporal::PassRole::Output ? output_decision : temporal::DrawDecision::Proceed;
+    }
+};
+
+std::optional<UINT64> primitives(Device& gpu, const Targets& targets, ID3D11Texture2D* backbuffer) {
+    D3D11_QUERY_DESC description{D3D11_QUERY_PIPELINE_STATISTICS, 0};
+    ComPtr<ID3D11Query> query;
+    if (FAILED(gpu.device->CreateQuery(&description, &query))) return std::nullopt;
+    auto& tracker = temporal::scene_tracker();
+    tracker.start_frame(backbuffer);
+    gpu.context->Begin(query.Get());
+    game_frame(gpu, targets, true);
+    gpu.context->End(query.Get());
+    tracker.finish_frame(gpu.context.Get());
+    D3D11_QUERY_DATA_PIPELINE_STATISTICS data{};
+    for (int attempt = 0; attempt < 200; ++attempt) {
+        if (gpu.context->GetData(query.Get(), &data, sizeof(data), 0) == S_OK) return data.IAPrimitives;
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    }
+    return std::nullopt;
+}
+
+int listener_events(Device& gpu, const Targets& targets, ID3D11Texture2D* backbuffer, RecordingListener& listener) {
+    auto& tracker = temporal::scene_tracker();
+    listener.events.clear();
+    tracker.start_frame(backbuffer);
+    game_frame(gpu, targets, true);
+    tracker.finish_frame(gpu.context.Get());
+    if (listener.events.size() != 3) return 60;
+    using temporal::PassRole;
+    if (listener.events[0].role != PassRole::SceneLighting || listener.events[1].role != PassRole::TemporalResolve)
+        return 61;
+    const auto& output = listener.events[2];
+    if (output.role != PassRole::Output || !output.render || output.render->width != render_width) return 62;
+    if (output.depth.Get() != targets.depth.Get() || !output.resolve) return 63;
+    return listener.events[0].resolve ? 64 : 0;
+}
+
+int listener_veto(Device& gpu, const Targets& targets, ID3D11Texture2D* backbuffer) {
+    auto& tracker = temporal::scene_tracker();
+    RecordingListener listener;
+    tracker.attach(&listener);
+    int result = listener_events(gpu, targets, backbuffer, listener);
+    auto proceeded = result == 0 ? primitives(gpu, targets, backbuffer) : std::nullopt;
+    listener.output_decision = temporal::DrawDecision::Skip;
+    auto skipped = result == 0 ? primitives(gpu, targets, backbuffer) : std::nullopt;
+    tracker.detach(&listener);
+    if (result != 0) return result;
+    if (!proceeded || !skipped) {
+        std::cerr << "pipeline statistics unavailable: the skipped draw was checked only through the decision\n";
+        return 0;
+    }
+    if (*proceeded == *skipped + 1) return 0;
+    std::cerr << "primitives proceed=" << *proceeded << " skip=" << *skipped << '\n';
+    return 65;
+}
+
 int main() {
     HWND window = CreateWindowExW(0, L"STATIC", L"", WS_OVERLAPPEDWINDOW, 0, 0, 32, 32,
         nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
@@ -121,6 +185,7 @@ int main() {
     if (!temporal::install_scene_hooks(gpu.context.Get())) return 3;
     ComPtr<ID3D11Texture2D> backbuffer;
     gpu.swapchain->GetBuffer(0, IID_PPV_ARGS(&backbuffer));
+    gpu.device->CreateRenderTargetView(backbuffer.Get(), nullptr, &targets.output);
     auto& tracker = temporal::scene_tracker();
     tracker.start_frame(backbuffer.Get());
     game_frame(gpu, targets, true);
@@ -133,6 +198,7 @@ int main() {
     if (result == 0 && tracker.finish_frame(gpu.context.Get()).camera) result = 30;
     if (result == 0) result = observe(gpu, targets, backbuffer.Get());
     if (result == 0) result = observe_resolve(gpu, targets, backbuffer.Get());
+    if (result == 0) result = listener_veto(gpu, targets, backbuffer.Get());
     DestroyWindow(window);
     return result;
 }

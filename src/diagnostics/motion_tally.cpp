@@ -37,6 +37,12 @@ void MotionTally::add_resolves(const temporal::ResolveReport& report) noexcept {
     }
 }
 
+void MotionTally::add_times(const temporal::StageTimes& times) noexcept {
+    max_times.capture_us = std::max(max_times.capture_us, times.capture_us);
+    max_times.camera_collect_us = std::max(max_times.camera_collect_us, times.camera_collect_us);
+    max_times.resolve_collect_us = std::max(max_times.resolve_collect_us, times.resolve_collect_us);
+}
+
 void MotionTally::count_sync(const temporal::TemporalDecision& decision) noexcept {
     if (!decision.sync) return;
     switch (decision.sync->result) {
@@ -66,6 +72,8 @@ std::string tally_line(const MotionTally& tally) {
         count("resolve_rejected", tally.resolve_rejected);
     if (tally.max_resolve_move_m) line += " max_resolve_move_m=" + fixed(*tally.max_resolve_move_m);
     if (tally.max_resolve_turn_deg) line += " max_resolve_turn_deg=" + fixed(*tally.max_resolve_turn_deg);
-    return line;
+    return line + " max_capture_us=" + std::to_string(tally.max_times.capture_us) + " max_camera_collect_us=" +
+        std::to_string(tally.max_times.camera_collect_us) + " max_resolve_collect_us=" +
+        std::to_string(tally.max_times.resolve_collect_us);
 }
 }

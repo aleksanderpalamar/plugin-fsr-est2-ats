@@ -4,6 +4,7 @@
 #include "temporal/pass_listener.hpp"
 #include "temporal/resolve_capture.hpp"
 #include "temporal/scene_recognizer.hpp"
+#include "temporal/stage_times.hpp"
 
 #include <d3d11.h>
 #include <atomic>
@@ -18,6 +19,7 @@ struct SceneSample {
     Microsoft::WRL::ComPtr<ID3D11Texture2D> depth;
     std::vector<CameraObservation> observations;
     std::vector<FrameFloats> resolves;
+    StageTimes times;
 };
 
 class SceneTracker {
@@ -35,6 +37,7 @@ private:
     std::atomic_bool active_{false};
     bool recording_ = false;
     bool captured_ = false;
+    std::int64_t capture_us_ = 0;
     std::uint64_t index_ = 0;
     SceneRecognizer recognizer_;
     CameraCapture camera_;

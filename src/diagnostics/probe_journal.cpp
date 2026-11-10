@@ -27,6 +27,7 @@ void ProbeJournal::record(const temporal::TemporalDecision& decision, const Fram
     record_events(report, resolves);
     tally_.add(decision, facts.cpu_us, report);
     tally_.add_resolves(resolves);
+    tally_.add_times(facts.times);
     if (tally_.frames < logged_frames) return;
     log(tally_line(tally_));
     tally_ = {};

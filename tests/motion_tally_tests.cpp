@@ -1,5 +1,6 @@
 #include "diagnostics/motion_tally.hpp"
 #include "temporal/resolve_review.hpp"
+#include "temporal/stage_times.hpp"
 
 #include <iostream>
 
@@ -37,7 +38,7 @@ int summary_case() {
     auto line = diagnostics::tally_line(tally);
     std::string wanted = "Motion summary frames=5 ready=1 cuts=1 confirmed=2 resynced=1 lost=1 rejected=2 jumps=1 "
         "max_cpu_us=9 max_move_m=12.00 max_turn_deg=1.25 max_camera_m=813 resolves=0 resolve_matched=0 "
-        "resolve_rejected=0";
+        "resolve_rejected=0 max_capture_us=0 max_camera_collect_us=0 max_resolve_collect_us=0";
     if (line == wanted) return 0;
     std::cerr << line << '\n';
     return 10;
@@ -48,7 +49,8 @@ int empty_case() {
     tally.add(decision(TemporalStatus::NoScene, std::nullopt), 0, report(std::nullopt));
     auto line = diagnostics::tally_line(tally);
     if (line == "Motion summary frames=1 ready=0 cuts=0 confirmed=0 resynced=0 lost=0 rejected=0 jumps=0 max_cpu_us=0 "
-        "resolves=0 resolve_matched=0 resolve_rejected=0")
+        "resolves=0 resolve_matched=0 resolve_rejected=0 max_capture_us=0 max_camera_collect_us=0 "
+        "max_resolve_collect_us=0")
         return 0;
     std::cerr << line << '\n';
     return 20;
@@ -68,15 +70,29 @@ int resolve_case() {
     auto line = diagnostics::tally_line(tally);
     std::string wanted = "Motion summary frames=0 ready=0 cuts=0 confirmed=0 resynced=0 lost=0 rejected=0 jumps=0 "
         "max_cpu_us=0 resolves=3 resolve_matched=2 resolve_rejected=1 max_resolve_move_m=0.31 "
-        "max_resolve_turn_deg=1.50";
+        "max_resolve_turn_deg=1.50 max_capture_us=0 max_camera_collect_us=0 max_resolve_collect_us=0";
     if (line == wanted) return 0;
     std::cerr << line << '\n';
     return 30;
 }
 }
 
+int times_case() {
+    diagnostics::MotionTally tally;
+    tally.add_times({12, 40, 7});
+    tally.add_times({30, 5, 9});
+    tally.add_times({4, 55, 2});
+    auto line = diagnostics::tally_line(tally);
+    std::string wanted = "Motion summary frames=0 ready=0 cuts=0 confirmed=0 resynced=0 lost=0 rejected=0 jumps=0 "
+        "max_cpu_us=0 resolves=0 resolve_matched=0 resolve_rejected=0 max_capture_us=30 max_camera_collect_us=55 "
+        "max_resolve_collect_us=9";
+    if (line == wanted) return 0;
+    std::cerr << line << '\n';
+    return 40;
+}
+
 int main() {
-    for (auto test_case : {summary_case, empty_case, resolve_case}) {
+    for (auto test_case : {summary_case, empty_case, resolve_case, times_case}) {
         if (int code = test_case(); code != 0) return code;
     }
     return 0;

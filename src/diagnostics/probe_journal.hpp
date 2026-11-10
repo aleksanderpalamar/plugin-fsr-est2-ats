@@ -3,6 +3,7 @@
 #include "diagnostics/motion_tally.hpp"
 #include "temporal/observation_review.hpp"
 #include "temporal/resolve_review.hpp"
+#include "temporal/stage_times.hpp"
 #include "temporal/temporal_history.hpp"
 
 #include <cstdint>
@@ -13,6 +14,7 @@ struct FrameFacts {
     std::uint64_t index = 0;
     std::optional<temporal::RenderSize> render;
     std::int64_t cpu_us = 0;
+    temporal::StageTimes times;
 };
 
 class ProbeJournal {

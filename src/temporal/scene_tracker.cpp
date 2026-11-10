@@ -1,11 +1,17 @@
 #include "temporal/scene_tracker.hpp"
 
 #include <array>
+#include <chrono>
 #include <vector>
 
 namespace neuralfx::temporal {
 namespace {
 using Microsoft::WRL::ComPtr;
+using Clock = std::chrono::steady_clock;
+
+std::int64_t microseconds_since(Clock::time_point start) {
+    return std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - start).count();
+}
 
 struct BoundTargets {
     std::vector<Surface> colors;
@@ -53,6 +59,7 @@ void SceneTracker::start_frame(ID3D11Texture2D* backbuffer) noexcept {
     recognizer_.begin_frame(*surface);
     ++index_;
     captured_ = false;
+    capture_us_ = 0;
     depth_.Reset();
 }
 
@@ -73,8 +80,10 @@ void SceneTracker::draw(ID3D11DeviceContext* context) noexcept {
     std::lock_guard lock(mutex_);
     if (!recording_) return;
     auto action = recognizer_.draw();
+    auto start = Clock::now();
     if (action == DrawAction::ReadCamera) captured_ = camera_.capture(context, index_);
     if (action == DrawAction::ReadResolve) resolve_.capture(context, index_);
+    if (action != DrawAction::None) capture_us_ += microseconds_since(start);
     if (action == DrawAction::None || !listener_) return;
     listener_->first_draw(context, index_,
         action == DrawAction::ReadCamera ? PassRole::SceneLighting : PassRole::TemporalResolve);
@@ -89,8 +98,13 @@ SceneSample SceneTracker::finish_frame(ID3D11DeviceContext* context) noexcept {
     std::lock_guard lock(mutex_);
     if (!recording_) return {};
     recording_ = false;
+    auto start = Clock::now();
     SceneSample sample{index_, recognizer_.frame(), nullptr, depth_, camera_.collect(context)};
+    sample.times.camera_collect_us = microseconds_since(start);
+    start = Clock::now();
     sample.resolves = resolve_.collect(context);
+    sample.times.resolve_collect_us = microseconds_since(start);
+    sample.times.capture_us = capture_us_;
     if (captured_) sample.camera = camera_.camera();
     return sample;
 }

@@ -112,7 +112,8 @@ void inspect(Probe& state, const Swapchain& target) {
     auto decision = state.history.advance({sample.index, sample.frame.render, sample.camera != nullptr,
         sample.frame.temporal_resolve, report.jitters, report.jump, !report.rejections.empty()});
     auto cpu_us = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - start).count();
-    state.journal.record(decision, {sample.index, sample.frame.render, cpu_us}, report, review_resolves(sample));
+    state.journal.record(decision, {sample.index, sample.frame.render, cpu_us, sample.times}, report,
+        review_resolves(sample));
     for (const auto& line : state.dump.finish_frame()) log(line);
     if (!state.ready || !decision.jitter || !sample.camera || !sample.depth) return;
     draw_overlay(state, target, sample, *sample.frame.render, decision.status == temporal::TemporalStatus::Ready);

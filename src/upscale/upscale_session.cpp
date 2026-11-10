@@ -12,7 +12,7 @@ bool same_version(const std::string& selected, const std::string& active) {
 }
 }
 
-UpscaleStatus UpscaleSession::open(temporal::RenderSize max_render, temporal::RenderSize max_output) {
+UpscaleStatus UpscaleSession::open(const OpenParameters& parameters) {
     report_ = {};
     pending_reset_ = false;
     if (mode_ == UpscaleMode::Off) {
@@ -22,7 +22,7 @@ UpscaleStatus UpscaleSession::open(temporal::RenderSize max_render, temporal::Re
     auto selection = select_provider(mode_, backend_.providers());
     report_.reason = selection.reason;
     if (!selection.provider) return UpscaleStatus::Unsupported;
-    auto status = backend_.open(*selection.provider, max_render, max_output);
+    auto status = backend_.open(*selection.provider, parameters);
     if (status != UpscaleStatus::Ready) return fail(status);
     auto active = backend_.provider_name();
     if (!same_version(selection.provider->name, active)) return fail(UpscaleStatus::BackendFailure);

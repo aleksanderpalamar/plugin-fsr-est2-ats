@@ -14,6 +14,7 @@ FrameContract valid_contract() {
     contract.frame_time_ms = 16.6f;
     contract.inputs = InputAvailability::Complete;
     contract.motion = MotionQuality::Valid;
+    contract.camera = {0.1f, 1600.0f, 0.9f};
     return contract;
 }
 
@@ -61,6 +62,20 @@ int numbers_case() {
     return validate(contract) == UpscaleStatus::InvalidInput ? 0 : 43;
 }
 
+int camera_case() {
+    auto contract = valid_contract();
+    contract.camera = {0.0f, 1600.0f, 0.9f};
+    if (validate(contract) != UpscaleStatus::InvalidInput) return 70;
+    contract.camera = {1.0f, 1.0f, 0.9f};
+    if (validate(contract) != UpscaleStatus::InvalidInput) return 71;
+    contract.camera = {0.1f, 1600.0f, 0.0f};
+    if (validate(contract) != UpscaleStatus::InvalidInput) return 72;
+    contract.camera = {0.1f, 1600.0f, 3.2f};
+    if (validate(contract) != UpscaleStatus::InvalidInput) return 73;
+    contract.camera = {0.1f, std::nanf(""), 0.9f};
+    return validate(contract) == UpscaleStatus::InvalidInput ? 0 : 74;
+}
+
 int reset_case() {
     auto contract = valid_contract();
     contract.reset = true;
@@ -78,7 +93,7 @@ int names_case() {
 }
 
 int main() {
-    for (auto test_case : {ready_case, sizes_case, inputs_case, numbers_case, reset_case, names_case}) {
+    for (auto test_case : {ready_case, sizes_case, inputs_case, numbers_case, camera_case, reset_case, names_case}) {
         if (int code = test_case(); code != 0) {
             std::cerr << "frame_contract case failed: " << code << '\n';
             return code;

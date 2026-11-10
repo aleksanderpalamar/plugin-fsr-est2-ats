@@ -16,12 +16,18 @@ struct FrameResources {
     ID3D11Texture2D* output = nullptr;
 };
 
+struct OpenParameters {
+    temporal::RenderSize max_render;
+    temporal::RenderSize max_output;
+    bool depth_inverted = true;
+    bool color_non_linear = true;
+};
+
 class UpscalingBackend {
 public:
     virtual ~UpscalingBackend() = default;
     virtual std::vector<ProviderVersion> providers() = 0;
-    virtual UpscaleStatus open(const ProviderVersion& provider, temporal::RenderSize max_render,
-        temporal::RenderSize max_output) = 0;
+    virtual UpscaleStatus open(const ProviderVersion& provider, const OpenParameters& parameters) = 0;
     virtual std::string provider_name() const = 0;
     virtual UpscaleStatus upscale(const FrameContract& contract, const FrameResources& resources) = 0;
     virtual void close() = 0;

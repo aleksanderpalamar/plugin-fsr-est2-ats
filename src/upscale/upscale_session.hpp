@@ -16,7 +16,7 @@ struct SessionReport {
 class UpscaleSession {
 public:
     UpscaleSession(UpscalingBackend& backend, UpscaleMode mode) noexcept : backend_(backend), mode_(mode) {}
-    UpscaleStatus open(temporal::RenderSize max_render, temporal::RenderSize max_output);
+    UpscaleStatus open(const OpenParameters& parameters);
     UpscaleStatus process(const FrameContract& contract, const FrameResources& resources);
     void close() noexcept;
     const SessionReport& report() const noexcept { return report_; }

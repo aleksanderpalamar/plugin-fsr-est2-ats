@@ -12,6 +12,12 @@ bool sizes_valid(const FrameContract& contract) {
     return present && contract.render.width <= contract.output.width && contract.render.height <= contract.output.height;
 }
 
+bool camera_valid(const CameraParameters& camera) {
+    bool finite = std::isfinite(camera.near_plane) && std::isfinite(camera.far_plane) && std::isfinite(camera.vertical_fov);
+    return finite && camera.near_plane > 0.0f && camera.far_plane > camera.near_plane && camera.vertical_fov > 0.0f &&
+        camera.vertical_fov < 3.1415926f;
+}
+
 bool numbers_valid(const FrameContract& contract) {
     bool jitter = std::fabs(contract.jitter.x) <= max_jitter && std::fabs(contract.jitter.y) <= max_jitter;
     return jitter && std::isfinite(contract.frame_time_ms) && contract.frame_time_ms > 0.0f;
@@ -19,7 +25,8 @@ bool numbers_valid(const FrameContract& contract) {
 }
 
 UpscaleStatus validate(const FrameContract& contract) noexcept {
-    if (!sizes_valid(contract) || !numbers_valid(contract)) return UpscaleStatus::InvalidInput;
+    if (!sizes_valid(contract) || !numbers_valid(contract) || !camera_valid(contract.camera))
+        return UpscaleStatus::InvalidInput;
     if (contract.inputs != InputAvailability::Complete || contract.motion != MotionQuality::Valid)
         return UpscaleStatus::InvalidInput;
     return UpscaleStatus::Ready;

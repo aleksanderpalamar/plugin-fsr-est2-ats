@@ -7,6 +7,12 @@ enum class UpscaleStatus { Ready, Unsupported, InvalidInput, UnavailableDependen
 enum class InputAvailability { Complete, NoColor, NoDepth, NoMotion };
 enum class MotionQuality { Valid, Invalid };
 
+struct CameraParameters {
+    float near_plane = 0.1f;
+    float far_plane = 1600.0f;
+    float vertical_fov = 0.9f;
+};
+
 struct FrameContract {
     temporal::RenderSize render;
     temporal::RenderSize output;
@@ -14,6 +20,7 @@ struct FrameContract {
     float frame_time_ms = 0.0f;
     InputAvailability inputs = InputAvailability::Complete;
     MotionQuality motion = MotionQuality::Valid;
+    CameraParameters camera;
     bool reset = false;
 };
 

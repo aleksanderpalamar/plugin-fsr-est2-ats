@@ -1,4 +1,5 @@
 #include "diagnostics/motion_tally.hpp"
+#include "temporal/resolve_review.hpp"
 
 #include <iostream>
 
@@ -35,7 +36,8 @@ int summary_case() {
     tally.add(decision(TemporalStatus::Unsynced, SyncResult::Lost), 1, report(std::nullopt));
     auto line = diagnostics::tally_line(tally);
     std::string wanted = "Motion summary frames=5 ready=1 cuts=1 confirmed=2 resynced=1 lost=1 rejected=2 jumps=1 "
-        "max_cpu_us=9 max_move_m=12.00 max_turn_deg=1.25 max_camera_m=813";
+        "max_cpu_us=9 max_move_m=12.00 max_turn_deg=1.25 max_camera_m=813 resolves=0 resolve_matched=0 "
+        "resolve_rejected=0";
     if (line == wanted) return 0;
     std::cerr << line << '\n';
     return 10;
@@ -45,15 +47,36 @@ int empty_case() {
     diagnostics::MotionTally tally;
     tally.add(decision(TemporalStatus::NoScene, std::nullopt), 0, report(std::nullopt));
     auto line = diagnostics::tally_line(tally);
-    if (line == "Motion summary frames=1 ready=0 cuts=0 confirmed=0 resynced=0 lost=0 rejected=0 jumps=0 max_cpu_us=0")
+    if (line == "Motion summary frames=1 ready=0 cuts=0 confirmed=0 resynced=0 lost=0 rejected=0 jumps=0 max_cpu_us=0 "
+        "resolves=0 resolve_matched=0 resolve_rejected=0")
         return 0;
     std::cerr << line << '\n';
     return 20;
 }
+
+temporal::ResolveReport resolves(std::vector<temporal::ResolveSample> samples, std::size_t rejected = 0) {
+    temporal::ResolveReport result;
+    result.samples = std::move(samples);
+    result.rejected.resize(rejected);
+    return result;
+}
+
+int resolve_case() {
+    diagnostics::MotionTally tally;
+    tally.add_resolves(resolves({{1, {{}, 0.05f, 0.1f}, 3u}, {2, {{}, 0.31f, 0.25f}, std::nullopt}}, 1));
+    tally.add_resolves(resolves({{3, {{}, 0.12f, 1.5f}, 4u}}));
+    auto line = diagnostics::tally_line(tally);
+    std::string wanted = "Motion summary frames=0 ready=0 cuts=0 confirmed=0 resynced=0 lost=0 rejected=0 jumps=0 "
+        "max_cpu_us=0 resolves=3 resolve_matched=2 resolve_rejected=1 max_resolve_move_m=0.31 "
+        "max_resolve_turn_deg=1.50";
+    if (line == wanted) return 0;
+    std::cerr << line << '\n';
+    return 30;
+}
 }
 
 int main() {
-    for (auto test_case : {summary_case, empty_case}) {
+    for (auto test_case : {summary_case, empty_case, resolve_case}) {
         if (int code = test_case(); code != 0) return code;
     }
     return 0;

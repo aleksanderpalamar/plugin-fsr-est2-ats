@@ -3,7 +3,8 @@ add_library(neuralfx_temporal STATIC src/temporal/projection_jitter.cpp
     src/temporal/motion_reprojection.cpp src/temporal/scene_recognizer.cpp
     src/temporal/temporal_history.cpp src/temporal/jitter_sequence.cpp
     src/temporal/jitter_tracker.cpp src/temporal/camera_continuity.cpp
-    src/temporal/observation_review.cpp src/temporal/resolve_constants.cpp)
+    src/temporal/observation_review.cpp src/temporal/resolve_constants.cpp
+    src/temporal/resolve_review.cpp)
 target_compile_features(neuralfx_temporal PUBLIC cxx_std_20)
 target_include_directories(neuralfx_temporal PUBLIC src)
 add_executable(neuralfx_projection_jitter_tests tests/projection_jitter_tests.cpp)
@@ -49,3 +50,6 @@ add_test(NAME neuralfx_constant_dump_format_tests COMMAND neuralfx_constant_dump
 add_executable(neuralfx_resolve_constants_tests tests/resolve_constants_tests.cpp)
 target_link_libraries(neuralfx_resolve_constants_tests PRIVATE neuralfx_temporal)
 add_test(NAME neuralfx_resolve_constants_tests COMMAND neuralfx_resolve_constants_tests)
+add_executable(neuralfx_resolve_review_tests tests/resolve_review_tests.cpp)
+target_link_libraries(neuralfx_resolve_review_tests PRIVATE neuralfx_temporal)
+add_test(NAME neuralfx_resolve_review_tests COMMAND neuralfx_resolve_review_tests)

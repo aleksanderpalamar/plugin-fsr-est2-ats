@@ -1,3 +1,4 @@
+#include "resolve_values.hpp"
 #include "temporal/jitter_sequence.hpp"
 #include "temporal/resolve_constants.hpp"
 
@@ -8,29 +9,9 @@
 using namespace neuralfx::temporal;
 
 namespace {
-constexpr float degrees = 3.14159265f / 180.0f;
+using namespace resolve_test;
+
 constexpr RenderSize size{1440, 1080};
-
-using Values = std::array<float, resolve_floats>;
-
-Values game_values() {
-    Values values{};
-    values[16] = 1.0f;
-    values[21] = 1.0f;
-    values[26] = 1.0f;
-    values[44] = 1440.0f;
-    values[45] = 1080.0f;
-    return values;
-}
-
-void turn_by(Values& values, float yaw) {
-    float c = std::cos(yaw * degrees);
-    float s = std::sin(yaw * degrees);
-    values[16] = c;
-    values[18] = s;
-    values[24] = -s;
-    values[26] = c;
-}
 
 bool close_to(float actual, float expected, float tolerance = 1e-3f) {
     return std::fabs(actual - expected) < tolerance;
@@ -59,8 +40,7 @@ int logged_frame_case() {
 int driving_case() {
     Values values = game_values();
     turn_by(values, 2.0f);
-    values[19] = 0.1f;
-    values[27] = 0.3f;
+    move_by(values, 0.1f, 0.0f, 0.3f);
     auto result = evaluate_resolve(values, size);
     const auto* frame = frame_of(result);
     if (!frame) return 20;

@@ -79,8 +79,25 @@ int unmatched_case() {
 }
 }
 
+int resolve_case() {
+    temporal::ResolveSample sample{12, temporal::ResolveFrame{{0.0585f, 0.1619f}, 0.31f, 2.0f}, 11u};
+    if (int code = expect(diagnostics::resolve_line(sample),
+        "Motion resolve frame=12 jitter=0.0585,0.1619 phase=11 move_m=0.31 turn_deg=2.00", 80)) return code;
+    sample.phase.reset();
+    if (int code = expect(diagnostics::resolve_line(sample),
+        "Motion resolve frame=12 jitter=0.0585,0.1619 phase=none move_m=0.31 turn_deg=2.00", 81)) return code;
+    int code = expect(diagnostics::resolve_rejection_line({7, temporal::ResolveFault::SizeMismatch}),
+        "Motion resolve rejected frame=7 reason=size-mismatch", 82);
+    if (code) return code;
+    code = expect(diagnostics::resolve_rejection_line({8, temporal::ResolveFault::TooShort}),
+        "Motion resolve rejected frame=8 reason=too-short", 83);
+    if (code) return code;
+    return expect(diagnostics::resolve_rejection_line({9, temporal::ResolveFault::NotFinite}),
+        "Motion resolve rejected frame=9 reason=not-finite", 84);
+}
+
 int main() {
-    for (auto test_case : {ready_case, missing_case, names_case, rejection_case, jump_case, unmatched_case}) {
+    for (auto test_case : {ready_case, missing_case, names_case, rejection_case, jump_case, unmatched_case, resolve_case}) {
         if (int code = test_case(); code != 0) return code;
     }
     return 0;

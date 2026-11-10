@@ -27,6 +27,16 @@ void MotionTally::add(const temporal::TemporalDecision& decision, std::int64_t c
     count_sync(decision);
 }
 
+void MotionTally::add_resolves(const temporal::ResolveReport& report) noexcept {
+    resolve_rejected += report.rejected.size();
+    for (const auto& sample : report.samples) {
+        ++resolves;
+        if (sample.phase) ++resolve_matched;
+        keep_largest(max_resolve_move_m, sample.values.move_m);
+        keep_largest(max_resolve_turn_deg, sample.values.turn_deg);
+    }
+}
+
 void MotionTally::count_sync(const temporal::TemporalDecision& decision) noexcept {
     if (!decision.sync) return;
     switch (decision.sync->result) {
@@ -52,6 +62,10 @@ std::string tally_line(const MotionTally& tally) {
     if (tally.max_move_m) line += " max_move_m=" + fixed(*tally.max_move_m);
     if (tally.max_turn_deg) line += " max_turn_deg=" + fixed(*tally.max_turn_deg);
     if (tally.max_camera_m) line += " max_camera_m=" + std::to_string(std::lround(*tally.max_camera_m));
+    line += count("resolves", tally.resolves) + count("resolve_matched", tally.resolve_matched) +
+        count("resolve_rejected", tally.resolve_rejected);
+    if (tally.max_resolve_move_m) line += " max_resolve_move_m=" + fixed(*tally.max_resolve_move_m);
+    if (tally.max_resolve_turn_deg) line += " max_resolve_turn_deg=" + fixed(*tally.max_resolve_turn_deg);
     return line;
 }
 }

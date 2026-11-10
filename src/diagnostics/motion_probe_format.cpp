@@ -25,6 +25,15 @@ const char* fault_name(temporal::CameraFault fault) {
     return "unknown";
 }
 
+const char* resolve_fault_name(temporal::ResolveFault fault) {
+    switch (fault) {
+    case temporal::ResolveFault::TooShort: return "too-short";
+    case temporal::ResolveFault::NotFinite: return "not-finite";
+    case temporal::ResolveFault::SizeMismatch: return "size-mismatch";
+    }
+    return "unknown";
+}
+
 const char* status_name(TemporalStatus status) {
     switch (status) {
     case TemporalStatus::Ready: return "ready";
@@ -80,5 +89,17 @@ std::string unmatched_line(const temporal::UnmatchedCamera& camera) {
     return "Motion camera unmatched frame=" + std::to_string(camera.frame) + " jitter=" + decimal(camera.jitter.x) +
         "," + decimal(camera.jitter.y) + " view=" + values(camera.matrices.view) +
         " view_projection=" + values(camera.matrices.view_projection);
+}
+
+std::string resolve_line(const temporal::ResolveSample& sample) {
+    auto phase = sample.phase ? std::to_string(*sample.phase) : std::string("none");
+    return "Motion resolve frame=" + std::to_string(sample.frame) + " jitter=" + decimal(sample.values.jitter.x) +
+        "," + decimal(sample.values.jitter.y) + " phase=" + phase + " move_m=" + fixed(sample.values.move_m) +
+        " turn_deg=" + fixed(sample.values.turn_deg);
+}
+
+std::string resolve_rejection_line(const temporal::RejectedResolve& rejected) {
+    return "Motion resolve rejected frame=" + std::to_string(rejected.frame) + " reason=" +
+        resolve_fault_name(rejected.fault);
 }
 }

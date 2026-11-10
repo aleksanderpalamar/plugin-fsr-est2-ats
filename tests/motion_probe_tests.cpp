@@ -1,5 +1,6 @@
 #include "common/logger.hpp"
 #include "diagnostics/motion_probe.hpp"
+#include "resolve_values.hpp"
 #include "dxgi/context_hook.hpp"
 #include "scene_frame_fixture.hpp"
 #include "temporal/camera_state.hpp"
@@ -23,6 +24,14 @@ constexpr CameraValues captured_camera{-0.47095215f, 0.0f, -0.8821588f, -46.8624
     -0.0006845583f, 2.2190397f, 0.0003654605f, 23.599154f,
     0.00011026186f, 0.0f, -5.8864753e-05f, 0.19390413f,
     -0.8821588f, 0.0f, 0.47095215f, 48.97045f};
+
+ResolveValues resolve_for_scene() {
+    auto values = resolve_test::game_values(static_cast<float>(render_width), static_cast<float>(render_height));
+    auto jitter = temporal::sequence_jitter(5);
+    resolve_test::jitter_by(values, jitter.x, jitter.y);
+    resolve_test::move_by(values, 0.0f, 0.0f, 0.3f);
+    return values;
+}
 
 std::filesystem::path log_file() {
     return neuralfx::module_directory() / L"NeuralFX" / L"logs" / L"neuralfx.log";
@@ -120,7 +129,7 @@ int main() {
     Pipeline pipeline;
     Targets targets;
     if (!window || FAILED(create_device(window, gpu))) return 1;
-    if (!create_pipeline(gpu.device.Get(), pipeline) || !create_targets(gpu.device.Get(), captured_camera, targets))
+    if (!create_pipeline(gpu.device.Get(), pipeline) || !create_targets(gpu.device.Get(), captured_camera, targets, resolve_for_scene()))
         return 2;
     bind_pipeline(gpu.context.Get(), pipeline);
     neuralfx::hook_context(gpu.swapchain.Get());
@@ -145,6 +154,9 @@ int main() {
     if (result == 0 && log.find("Constant dump armed for 4 frames") == std::string::npos) result = 36;
     if (result == 0 && log.find("pass=lighting stage=vs slot=0") == std::string::npos) result = 37;
     if (result == 0 && log.find("pass=resolve stage=vs slot=0") == std::string::npos) result = 38;
+    if (result == 0 && log.find("Motion resolve frame=") == std::string::npos) result = 39;
+    if (result == 0 && log.find("phase=5 move_m=0.30") == std::string::npos) result = 40;
+    if (result == 0 && log.find("Motion resolve rejected") != std::string::npos) result = 41;
     DestroyWindow(window);
     return result;
 }

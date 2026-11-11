@@ -27,6 +27,7 @@ public:
 private:
     temporal::DrawDecision on_resolve(ID3D11DeviceContext* context, const temporal::PassEvent& event) noexcept;
     temporal::DrawDecision on_output(ID3D11DeviceContext* context, const temporal::PassEvent& event) noexcept;
+    bool refuse_oversized(temporal::RenderSize render, temporal::RenderSize output) noexcept;
     bool ensure_session(temporal::RenderSize render, temporal::RenderSize output) noexcept;
     FrameContract contract_for(const temporal::PassEvent& event, temporal::RenderSize output, temporal::Jitter jitter) noexcept;
     void note(const std::string& message) noexcept;

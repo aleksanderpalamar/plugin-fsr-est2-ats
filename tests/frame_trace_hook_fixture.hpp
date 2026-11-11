@@ -27,10 +27,10 @@ struct Pipeline {
     ComPtr<ID3D11Buffer> constants;
 };
 
-inline HRESULT create_device(HWND window, Device& output) {
+inline HRESULT create_device(HWND window, Device& output, UINT width = 32, UINT height = 32) {
     DXGI_SWAP_CHAIN_DESC description{};
-    description.BufferDesc.Width = 32;
-    description.BufferDesc.Height = 32;
+    description.BufferDesc.Width = width;
+    description.BufferDesc.Height = height;
     description.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
     description.SampleDesc.Count = 1;
     description.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;

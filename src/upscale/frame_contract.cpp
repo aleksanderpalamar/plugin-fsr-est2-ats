@@ -6,12 +6,6 @@ namespace neuralfx::upscale {
 namespace {
 constexpr float max_jitter = 1.0f;
 
-bool sizes_valid(const FrameContract& contract) {
-    bool present = contract.render.width > 0 && contract.render.height > 0 && contract.output.width > 0 &&
-        contract.output.height > 0;
-    return present && contract.render.width <= contract.output.width && contract.render.height <= contract.output.height;
-}
-
 bool camera_valid(const CameraParameters& camera) {
     bool finite = std::isfinite(camera.near_plane) && std::isfinite(camera.far_plane) && std::isfinite(camera.vertical_fov);
     return finite && camera.near_plane > 0.0f && camera.far_plane > camera.near_plane && camera.vertical_fov > 0.0f &&
@@ -24,8 +18,13 @@ bool numbers_valid(const FrameContract& contract) {
 }
 }
 
+bool can_upscale(temporal::RenderSize render, temporal::RenderSize output) noexcept {
+    bool present = render.width > 0 && render.height > 0 && output.width > 0 && output.height > 0;
+    return present && render.width <= output.width && render.height <= output.height;
+}
+
 ContractFault diagnose(const FrameContract& contract) noexcept {
-    if (!sizes_valid(contract)) return ContractFault::Sizes;
+    if (!can_upscale(contract.render, contract.output)) return ContractFault::Sizes;
     if (!numbers_valid(contract)) return ContractFault::Numbers;
     if (!camera_valid(contract.camera)) return ContractFault::Camera;
     if (contract.inputs != InputAvailability::Complete || contract.motion != MotionQuality::Valid)

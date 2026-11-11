@@ -37,6 +37,15 @@ int sizes_case() {
     return validate(contract) == UpscaleStatus::Ready ? 0 : 23;
 }
 
+int fits_case() {
+    if (!can_upscale({1440, 1080}, {1920, 1080})) return 30;
+    if (!can_upscale({1920, 1080}, {1920, 1080})) return 31;
+    if (can_upscale({1920, 1352}, {1920, 1080})) return 32;
+    if (can_upscale({2000, 1080}, {1920, 1080})) return 33;
+    if (can_upscale({0, 1080}, {1920, 1080})) return 34;
+    return can_upscale({1920, 1080}, {1920, 0}) ? 35 : 0;
+}
+
 int inputs_case() {
     for (auto missing : {InputAvailability::NoColor, InputAvailability::NoDepth, InputAvailability::NoMotion}) {
         auto contract = valid_contract();
@@ -119,7 +128,7 @@ int names_case() {
 }
 
 int main() {
-    for (auto test_case : {ready_case, sizes_case, inputs_case, numbers_case, camera_case, diagnose_case, reset_case, names_case}) {
+    for (auto test_case : {ready_case, sizes_case, fits_case, inputs_case, numbers_case, camera_case, diagnose_case, reset_case, names_case}) {
         if (int code = test_case(); code != 0) {
             std::cerr << "frame_contract case failed: " << code << '\n';
             return code;

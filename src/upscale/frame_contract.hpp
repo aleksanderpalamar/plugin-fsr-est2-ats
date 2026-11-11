@@ -26,6 +26,7 @@ struct FrameContract {
 
 enum class ContractFault { None, Sizes, Numbers, Camera, Inputs };
 
+bool can_upscale(temporal::RenderSize render, temporal::RenderSize output) noexcept;
 ContractFault diagnose(const FrameContract& contract) noexcept;
 UpscaleStatus validate(const FrameContract& contract) noexcept;
 const char* fault_name(ContractFault fault) noexcept;

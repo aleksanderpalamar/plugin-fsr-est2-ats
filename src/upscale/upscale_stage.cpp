@@ -98,6 +98,14 @@ temporal::DrawDecision UpscaleStage::on_resolve(ID3D11DeviceContext* context, co
     return replaced_ ? temporal::DrawDecision::Skip : temporal::DrawDecision::Proceed;
 }
 
+bool UpscaleStage::refuse_oversized(temporal::RenderSize render, temporal::RenderSize output) noexcept {
+    ready_ = false;
+    note("session inactive: render " + std::to_string(render.width) + "x" + std::to_string(render.height) +
+        " is larger than output " + std::to_string(output.width) + "x" + std::to_string(output.height) +
+        "; set the game's render scale to 100% or less");
+    return false;
+}
+
 bool UpscaleStage::ensure_session(temporal::RenderSize render, temporal::RenderSize output) noexcept {
     if (opened_ && same(render, opened_render_) && same(output, opened_output_)) return ready_;
     if (opened_) session_.close();
@@ -105,6 +113,7 @@ bool UpscaleStage::ensure_session(temporal::RenderSize render, temporal::RenderS
     opened_render_ = render;
     opened_output_ = output;
     pending_reset_ = true;
+    if (!can_upscale(render, output)) return refuse_oversized(render, output);
     auto status = session_.open({render, output, true, true});
     ready_ = status == UpscaleStatus::Ready;
     note(std::string("session ") + (ready_ ? "active" : "inactive") + " status=" + status_name(status) +

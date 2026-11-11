@@ -162,3 +162,20 @@ target_link_libraries(neuralfx_upscale_stage_tests PRIVATE neuralfx_upscale_host
     neuralfx_trace_d3d11 ${D3DCOMPILER_LIBRARY} user32)
 add_dependencies(neuralfx_upscale_stage_tests neuralfx_runtime_assets)
 add_test(NAME neuralfx_upscale_stage_tests COMMAND neuralfx_upscale_stage_tests)
+
+add_executable(neuralfx_upscale_stage_oversized_tests
+    tests/upscale_stage_oversized_tests.cpp
+    src/dxgi/context_hook.cpp
+    src/dxgi/depth_capture.cpp
+    src/renderer/depth_format.cpp
+    src/renderer/context_state.cpp
+    src/renderer/fullscreen_draw.cpp
+    src/gpu/shader_compiler.cpp
+    src/common/logger.cpp
+)
+target_compile_definitions(neuralfx_upscale_stage_oversized_tests PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_include_directories(neuralfx_upscale_stage_oversized_tests PRIVATE src)
+target_link_libraries(neuralfx_upscale_stage_oversized_tests PRIVATE neuralfx_upscale_host neuralfx_temporal_d3d11
+    neuralfx_trace_d3d11 ${D3DCOMPILER_LIBRARY} user32)
+add_dependencies(neuralfx_upscale_stage_oversized_tests neuralfx_runtime_assets)
+add_test(NAME neuralfx_upscale_stage_oversized_tests COMMAND neuralfx_upscale_stage_oversized_tests)

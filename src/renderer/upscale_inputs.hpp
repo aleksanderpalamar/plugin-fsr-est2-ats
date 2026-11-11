@@ -19,6 +19,7 @@ struct UpscaleSources {
     ID3D11Buffer* resolve = nullptr;
     temporal::RenderSize render;
     temporal::RenderSize output;
+    bool keep_previous = false;
 };
 
 class UpscaleInputs {
@@ -29,7 +30,7 @@ public:
 
 private:
     bool ensure(ID3D11Device* device, const UpscaleSources& sources) noexcept;
-    void build_reactive_mask(ID3D11DeviceContext* context, temporal::RenderSize render) noexcept;
+    bool build_reactive_mask(ID3D11DeviceContext* context, const UpscaleSources& sources) noexcept;
 
     ResolveFramePass resolve_frame_;
     CameraMotionPass motion_;
@@ -39,6 +40,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D11Texture2D> color_;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> color_view_;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> previous_;
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> older_;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> previous_view_;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> reactive_;
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> reactive_target_;

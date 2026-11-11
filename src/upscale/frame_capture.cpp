@@ -75,6 +75,10 @@ bool FrameCapture::save_frame(ID3D11DeviceContext* context, const CaptureSources
         saved = saved && write_bmp(directory_ / (stem + "-depth.bmp"),
             depth_image(as_elements<float>(*depth), depth->width, depth->height, sources.contract.camera)) &&
             write_bmp(directory_ / (stem + "-motion.bmp"), motion_image(halves, motion->width, motion->height));
+        if (resources.previous_color)
+            if (auto previous = read_texture(context, resources.previous_color))
+                saved = saved && write_bmp(directory_ / (stem + "-previous.bmp"),
+                    rgb_from_rgba8(previous->bytes, previous->width, previous->height));
         if (reactive)
             saved = saved && write_bmp(directory_ / (stem + "-reactive.bmp"), grey_image(reactive->bytes, reactive->width, reactive->height));
     }

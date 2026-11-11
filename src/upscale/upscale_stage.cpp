@@ -160,7 +160,8 @@ temporal::DrawDecision UpscaleStage::on_output(ID3D11DeviceContext* context, con
         return temporal::DrawDecision::Proceed;
     auto jitter = tracker_.predict(event.frame);
     if (!jitter) return temporal::DrawDecision::Proceed;
-    auto resources = inputs_.prepare(context, {found->color.Get(), event.depth.Get(), event.resolve.Get(), *event.render, output});
+    auto resources = inputs_.prepare(context,
+        {found->color.Get(), event.depth.Get(), event.resolve.Get(), *event.render, output, capture_.wants_previous()});
     if (!resources) return temporal::DrawDecision::Proceed;
     auto contract = contract_for(event, output, *jitter);
     auto status = session_.process(contract, *resources);

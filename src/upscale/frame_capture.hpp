@@ -22,6 +22,7 @@ public:
     explicit FrameCapture(std::filesystem::path directory) : directory_(std::move(directory)) {}
     void request() noexcept;
     bool pending() const noexcept { return remaining_ > 0; }
+    bool wants_previous() const noexcept { return remaining_ == capture_burst_frames; }
     void write(ID3D11DeviceContext* context, const CaptureSources& sources) noexcept;
 
 private:

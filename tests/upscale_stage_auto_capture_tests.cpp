@@ -16,7 +16,8 @@ ResolveValues driving_resolve() {
 }
 
 bool burst_exists(const std::filesystem::path& directory) {
-    return std::filesystem::exists(directory / "fsr-1-1-color.bmp") && std::filesystem::exists(directory / "fsr-1-3-resolve.txt");
+    return std::filesystem::exists(directory / "fsr-1-1-color.bmp") && std::filesystem::exists(directory / "fsr-1-3-resolve.txt") &&
+        std::filesystem::exists(directory / "fsr-1-1-previous.bmp") && !std::filesystem::exists(directory / "fsr-1-2-previous.bmp");
 }
 }
 

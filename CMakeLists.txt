@@ -241,3 +241,4 @@ add_custom_target(neuralfx_package
     DEPENDS neuralfx_runtime_assets
     VERBATIM
 )
+include(cmake/package_fsr.cmake)

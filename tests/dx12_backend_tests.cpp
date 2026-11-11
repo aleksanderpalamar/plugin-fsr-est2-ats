@@ -41,8 +41,9 @@ ComPtr<ID3D11Texture2D> texture(ID3D11Device* device, DXGI_FORMAT format, tempor
 }
 
 struct Inputs {
-    ComPtr<ID3D11Texture2D> color, depth, motion, output;
-    FrameResources resources() const { return {color.Get(), depth.Get(), motion.Get(), output.Get()}; }
+    ComPtr<ID3D11Texture2D> color, depth, motion, output, reactive, small_reactive;
+    FrameResources resources() const { return {color.Get(), depth.Get(), motion.Get(), output.Get(), reactive.Get()}; }
+    FrameResources mismatched() const { return {color.Get(), depth.Get(), motion.Get(), output.Get(), small_reactive.Get()}; }
 };
 
 std::optional<Inputs> make_inputs(ID3D11Device* device) {
@@ -50,12 +51,16 @@ std::optional<Inputs> make_inputs(ID3D11Device* device) {
     for (size_t index = 0; index < color.size(); ++index) color[index] = static_cast<unsigned char>(index * 5 + 40);
     std::vector<float> depth(render.width * render.height, 0.5f);
     std::vector<unsigned short> motion(render.width * render.height * 2, 0);
+    std::vector<unsigned char> reactive(render.width * render.height, 255);
     Inputs inputs;
+    inputs.reactive = texture(device, dx12_reactive_format, render, D3D11_BIND_SHADER_RESOURCE, reactive.data(), render.width);
+    inputs.small_reactive = texture(device, dx12_reactive_format, {64, 64}, D3D11_BIND_SHADER_RESOURCE, reactive.data(), 64);
     inputs.color = texture(device, dx12_color_format, render, D3D11_BIND_SHADER_RESOURCE, color.data(), render.width * 4);
     inputs.depth = texture(device, dx12_depth_format, render, D3D11_BIND_SHADER_RESOURCE, depth.data(), render.width * 4);
     inputs.motion = texture(device, dx12_motion_format, render, D3D11_BIND_SHADER_RESOURCE, motion.data(), render.width * 4);
     inputs.output = texture(device, dx12_output_format, output, D3D11_BIND_SHADER_RESOURCE, nullptr, 0);
-    if (!inputs.color || !inputs.depth || !inputs.motion || !inputs.output) return std::nullopt;
+    if (!inputs.color || !inputs.depth || !inputs.motion || !inputs.output || !inputs.reactive || !inputs.small_reactive)
+        return std::nullopt;
     return inputs;
 }
 
@@ -113,6 +118,10 @@ int automatic_runs(Host& host, Inputs& inputs) {
     for (int index = 0; index < 4; ++index)
         if (session.process(frame(index), inputs.resources()) != UpscaleStatus::Ready) return 32;
     if (nonzero_bytes(host, inputs.output.Get()) == 0) return 33;
+    if (session.process(frame(6), inputs.mismatched()) != UpscaleStatus::InvalidInput) return 36;
+    auto plain = inputs.resources();
+    plain.reactive = nullptr;
+    if (session.process(frame(7), plain) != UpscaleStatus::Ready) return 37;
     auto wrong = frame(5);
     wrong.render = {320, 180};
     if (session.process(wrong, inputs.resources()) != UpscaleStatus::InvalidInput) return 34;

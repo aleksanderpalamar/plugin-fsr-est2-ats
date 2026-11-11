@@ -14,6 +14,7 @@ struct FrameResources {
     ID3D11Texture2D* depth = nullptr;
     ID3D11Texture2D* motion = nullptr;
     ID3D11Texture2D* output = nullptr;
+    ID3D11Texture2D* reactive = nullptr;
 };
 
 struct OpenParameters {

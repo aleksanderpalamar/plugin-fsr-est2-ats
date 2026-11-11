@@ -29,6 +29,7 @@ int check_capture(const std::filesystem::path& directory) {
     if (output[54] != 0 || output[55] != 255 || output[56] != 0) return 21;
     if (read_file(directory / "fsr-1-color.bmp").size() != 54 + render_height * render_width * 3) return 22;
     if (read_file(directory / "fsr-1-depth.bmp").size() != 54 + render_height * render_width * 3) return 23;
+    if (read_file(directory / "fsr-1-reactive.bmp").size() != 54 + render_height * render_width * 3) return 25;
     return read_file(directory / "fsr-1-motion.bmp").size() == 54 + render_height * render_width * 3 ? 0 : 24;
 }
 #endif
@@ -115,6 +116,7 @@ int main() {
         contract.camera.far_plane != 1600.0f) return 13;
     if (!contract.reset) return 14;
     if (!backend.opened.depth_inverted || !backend.opened.color_non_linear) return 15;
+    if (!backend.reactive_seen) return 16;
     if (int code = check_capture(captures); code != 0) return code;
 #endif
     DestroyWindow(window);

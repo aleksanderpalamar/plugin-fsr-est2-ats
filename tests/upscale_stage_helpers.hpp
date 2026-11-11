@@ -16,6 +16,7 @@ struct RecordingBackend final : upscale::UpscalingBackend {
     ID3D11DeviceContext* context = nullptr;
     ID3D11Device* device = nullptr;
     int upscales = 0;
+    bool reactive_seen = false;
     int closes = 0;
     upscale::FrameContract last;
     upscale::OpenParameters opened;
@@ -28,6 +29,7 @@ struct RecordingBackend final : upscale::UpscalingBackend {
     std::string provider_name() const override { return "3.1.6"; }
     upscale::UpscaleStatus upscale(const upscale::FrameContract& contract, const upscale::FrameResources& resources) override {
         ++upscales;
+        reactive_seen = resources.reactive != nullptr;
         last = contract;
         ComPtr<ID3D11RenderTargetView> view;
         if (FAILED(device->CreateRenderTargetView(resources.output, nullptr, &view))) return upscale::UpscaleStatus::BackendFailure;

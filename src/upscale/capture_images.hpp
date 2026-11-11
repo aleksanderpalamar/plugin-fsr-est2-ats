@@ -24,5 +24,7 @@ RgbImage rgb_from_rgba8(std::span<const std::uint8_t> texels, std::uint32_t widt
 RgbImage depth_image(std::span<const float> depth, std::uint32_t width, std::uint32_t height, const CameraParameters& camera);
 RgbImage motion_image(std::span<const std::uint16_t> halves, std::uint32_t width, std::uint32_t height);
 MotionStats motion_stats(std::span<const std::uint16_t> halves);
+RgbImage grey_image(std::span<const std::uint8_t> values, std::uint32_t width, std::uint32_t height);
+float reactive_fraction(std::span<const std::uint8_t> values);
 float mean_luma(const RgbImage& image);
 }

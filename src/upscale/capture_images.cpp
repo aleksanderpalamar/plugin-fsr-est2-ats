@@ -79,6 +79,19 @@ MotionStats motion_stats(std::span<const std::uint16_t> halves) {
     return stats;
 }
 
+RgbImage grey_image(std::span<const std::uint8_t> values, std::uint32_t width, std::uint32_t height) {
+    RgbImage image{width, height, {}};
+    image.bytes.reserve(values.size() * 3);
+    for (std::uint8_t value : values) push_grey(image.bytes, value);
+    return image;
+}
+
+float reactive_fraction(std::span<const std::uint8_t> values) {
+    if (values.empty()) return 0.0f;
+    auto marked = std::count_if(values.begin(), values.end(), [](std::uint8_t value) { return value >= 128; });
+    return static_cast<float>(marked) / static_cast<float>(values.size());
+}
+
 float mean_luma(const RgbImage& image) {
     std::size_t count = image.bytes.size() / 3;
     if (count == 0) return 0.0f;

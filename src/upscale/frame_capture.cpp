@@ -34,7 +34,7 @@ std::optional<Readback> read_texture(ID3D11DeviceContext* context, ID3D11Texture
     D3D11_MAPPED_SUBRESOURCE mapped{};
     if (FAILED(context->Map(staging.Get(), 0, D3D11_MAP_READ, 0, &mapped))) return std::nullopt;
     Readback result{description.Width, description.Height, {}};
-    std::size_t row = static_cast<std::size_t>(description.Width) * 4;
+    std::size_t row = static_cast<std::size_t>(description.Width) * (description.Format == DXGI_FORMAT_R8_UNORM ? 1 : 4);
     result.bytes.resize(row * description.Height);
     for (UINT y = 0; y < description.Height; ++y)
         std::memcpy(result.bytes.data() + y * row, static_cast<const std::uint8_t*>(mapped.pData) + y * mapped.RowPitch, row);
@@ -49,13 +49,15 @@ std::vector<Element> as_elements(const Readback& readback) {
     return elements;
 }
 
-std::string describe(const FrameContract& contract, float color_luma, float output_luma, const MotionStats& motion) {
+std::string describe(const FrameContract& contract, float color_luma, float output_luma, const MotionStats& motion,
+    float reactive) {
     return " render=" + std::to_string(contract.render.width) + "x" + std::to_string(contract.render.height) +
         " output=" + std::to_string(contract.output.width) + "x" + std::to_string(contract.output.height) +
         " jitter=" + std::to_string(contract.jitter.x) + "," + std::to_string(contract.jitter.y) +
         " reset=" + std::to_string(contract.reset ? 1 : 0) + " luma_in=" + std::to_string(color_luma) +
         " luma_out=" + std::to_string(output_luma) + " motion_mean_px=" + std::to_string(motion.mean_pixels) +
-        " motion_max_px=" + std::to_string(motion.max_pixels) + " motion_over_8px=" + std::to_string(motion.fraction_over_eight);
+        " motion_max_px=" + std::to_string(motion.max_pixels) + " motion_over_8px=" + std::to_string(motion.fraction_over_eight) +
+        " reactive_over_half=" + std::to_string(reactive);
 }
 }
 
@@ -64,7 +66,8 @@ bool FrameCapture::save_all(ID3D11DeviceContext* context, const FrameResources& 
     auto depth = read_texture(context, resources.depth);
     auto motion = read_texture(context, resources.motion);
     auto output = read_texture(context, resources.output);
-    if (!color || !depth || !motion || !output) return false;
+    auto reactive = resources.reactive ? read_texture(context, resources.reactive) : std::nullopt;
+    if (!color || !depth || !motion || !output || (resources.reactive && !reactive)) return false;
     std::filesystem::create_directories(directory_);
     auto stem = "fsr-" + std::to_string(++sequence_);
     auto color_image = rgb_from_rgba8(color->bytes, color->width, color->height);
@@ -75,7 +78,11 @@ bool FrameCapture::save_all(ID3D11DeviceContext* context, const FrameResources& 
         write_bmp(directory_ / (stem + "-depth.bmp"),
             depth_image(as_elements<float>(*depth), depth->width, depth->height, contract.camera)) &&
         write_bmp(directory_ / (stem + "-motion.bmp"), motion_image(halves, motion->width, motion->height));
-    if (saved) log("Upscale capture " + stem + describe(contract, mean_luma(color_image), mean_luma(output_image), motion_stats(halves)));
+    if (saved && reactive)
+        saved = write_bmp(directory_ / (stem + "-reactive.bmp"), grey_image(reactive->bytes, reactive->width, reactive->height));
+    float marked = reactive ? reactive_fraction(reactive->bytes) : 0.0f;
+    if (saved) log("Upscale capture " + stem + describe(contract, mean_luma(color_image), mean_luma(output_image),
+        motion_stats(halves), marked));
     return saved;
 }
 

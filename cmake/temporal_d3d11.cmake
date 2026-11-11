@@ -2,7 +2,8 @@ add_library(neuralfx_upscale_host STATIC src/upscale/resolve_replacement.cpp src
     src/upscale/upscale_runtime.cpp src/dxgi/swapchain_access.cpp
     src/renderer/upscale_inputs.cpp src/renderer/blit_pass.cpp src/renderer/depth_to_float_pass.cpp
     src/renderer/resolve_frame_pass.cpp src/renderer/camera_frame_slot.cpp src/renderer/camera_motion_pass.cpp
-    src/renderer/motion_targets.cpp src/renderer/compute_state.cpp src/upscale/frame_capture.cpp)
+    src/renderer/motion_targets.cpp src/renderer/compute_state.cpp src/upscale/frame_capture.cpp
+    src/renderer/reactive_mask_pass.cpp)
 target_compile_features(neuralfx_upscale_host PUBLIC cxx_std_20)
 target_compile_definitions(neuralfx_upscale_host PUBLIC UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
 target_include_directories(neuralfx_upscale_host PUBLIC src)
@@ -179,3 +180,17 @@ target_link_libraries(neuralfx_upscale_stage_oversized_tests PRIVATE neuralfx_up
     neuralfx_trace_d3d11 ${D3DCOMPILER_LIBRARY} user32)
 add_dependencies(neuralfx_upscale_stage_oversized_tests neuralfx_runtime_assets)
 add_test(NAME neuralfx_upscale_stage_oversized_tests COMMAND neuralfx_upscale_stage_oversized_tests)
+
+add_executable(neuralfx_reactive_mask_pass_tests
+    tests/reactive_mask_pass_tests.cpp
+    src/renderer/reactive_mask_pass.cpp
+    src/renderer/fullscreen_draw.cpp
+    src/gpu/shader_compiler.cpp
+    src/common/logger.cpp
+)
+target_compile_features(neuralfx_reactive_mask_pass_tests PRIVATE cxx_std_20)
+target_compile_definitions(neuralfx_reactive_mask_pass_tests PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_include_directories(neuralfx_reactive_mask_pass_tests PRIVATE src)
+target_link_libraries(neuralfx_reactive_mask_pass_tests PRIVATE neuralfx_temporal d3d11 ${D3DCOMPILER_LIBRARY})
+add_dependencies(neuralfx_reactive_mask_pass_tests neuralfx_runtime_assets)
+add_test(NAME neuralfx_reactive_mask_pass_tests COMMAND neuralfx_reactive_mask_pass_tests)

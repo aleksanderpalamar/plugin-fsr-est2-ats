@@ -15,6 +15,7 @@ struct FfxInputs {
     ID3D12Resource* depth = nullptr;
     ID3D12Resource* motion = nullptr;
     ID3D12Resource* output = nullptr;
+    ID3D12Resource* reactive = nullptr;
 };
 
 class FfxRuntime {

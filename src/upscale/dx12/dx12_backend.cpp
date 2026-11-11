@@ -52,6 +52,7 @@ UpscaleStatus Dx12Backend::create_textures(const OpenParameters& parameters) noe
     bool created = create_texture(color_, host, device, dx12_color_format, parameters.max_render, 0) &&
         create_texture(depth_, host, device, dx12_depth_format, parameters.max_render, 0) &&
         create_texture(motion_, host, device, dx12_motion_format, parameters.max_render, 0) &&
+        create_texture(reactive_, host, device, dx12_reactive_format, parameters.max_render, 0) &&
         create_texture(output_, host, device, dx12_output_format, parameters.max_output, D3D11_BIND_UNORDERED_ACCESS);
     return created ? UpscaleStatus::Ready : UpscaleStatus::Unsupported;
 }
@@ -69,15 +70,16 @@ bool Dx12Backend::accepts(const FrameContract& contract, const FrameResources& r
     if (!color_ || !depth_ || !motion_ || !output_) return false;
     bool sizes = contract.render.width == color_->width && contract.render.height == color_->height &&
         contract.output.width == output_->width && contract.output.height == output_->height;
-    return sizes && matches(*color_, resources.color) && matches(*depth_, resources.depth) &&
+    bool reactive = !resources.reactive || (reactive_ && matches(*reactive_, resources.reactive));
+    return sizes && reactive && matches(*color_, resources.color) && matches(*depth_, resources.depth) &&
         matches(*motion_, resources.motion) && matches(*output_, resources.output);
 }
 
-UpscaleStatus Dx12Backend::record(const FrameContract& contract) noexcept {
+UpscaleStatus Dx12Backend::record(const FrameContract& contract, bool use_reactive) noexcept {
     auto* list = dx12_->list();
     dx12_->transition(output_->device.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     auto status = runtime_.dispatch({list, color_->device.Get(), depth_->device.Get(), motion_->device.Get(),
-        output_->device.Get()}, contract);
+        output_->device.Get(), use_reactive ? reactive_->device.Get() : nullptr}, contract);
     dx12_->transition(output_->device.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
     return status;
 }
@@ -87,9 +89,10 @@ UpscaleStatus Dx12Backend::upscale(const FrameContract& contract, const FrameRes
     context_->CopyResource(color_->host.Get(), resources.color);
     context_->CopyResource(depth_->host.Get(), resources.depth);
     context_->CopyResource(motion_->host.Get(), resources.motion);
+    if (resources.reactive) context_->CopyResource(reactive_->host.Get(), resources.reactive);
     if (FAILED(context_->Signal(fence_.Get(), ++fence_value_))) return UpscaleStatus::DeviceLost;
     context_->Flush();
-    auto status = record(contract);
+    auto status = record(contract, resources.reactive != nullptr);
     if (!dx12_->submit(fence_value_)) return UpscaleStatus::DeviceLost;
     if (status != UpscaleStatus::Ready) return status;
     context_->CopyResource(resources.output, output_->host.Get());
@@ -101,6 +104,7 @@ void Dx12Backend::close() {
     color_.reset();
     depth_.reset();
     motion_.reset();
+    reactive_.reset();
     output_.reset();
     name_.clear();
 }

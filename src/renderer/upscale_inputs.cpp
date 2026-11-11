@@ -26,6 +26,7 @@ HRESULT UpscaleInputs::initialize(ID3D11Device* device, const std::filesystem::p
     HRESULT result = resolve_frame_.initialize(device, shader_directory);
     if (SUCCEEDED(result)) result = motion_.initialize(device, shader_directory);
     if (SUCCEEDED(result)) result = depth_pass_.initialize(device, shader_directory);
+    if (SUCCEEDED(result)) result = reactive_pass_.initialize(device, shader_directory);
     return result;
 }
 
@@ -34,13 +35,24 @@ bool UpscaleInputs::ensure(ID3D11Device* device, const UpscaleSources& sources) 
         output_size_.width == sources.output.width && output_size_.height == sources.output.height;
     if (same) return true;
     color_ = make_texture(device, DXGI_FORMAT_R8G8B8A8_UNORM, sources.render, D3D11_BIND_SHADER_RESOURCE);
+    previous_ = make_texture(device, DXGI_FORMAT_R8G8B8A8_UNORM, sources.render, D3D11_BIND_SHADER_RESOURCE);
+    reactive_ = make_texture(device, DXGI_FORMAT_R8_UNORM, sources.render,
+        D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+    previous_valid_ = false;
+    color_view_.Reset();
+    previous_view_.Reset();
+    reactive_target_.Reset();
     depth_ = make_texture(device, DXGI_FORMAT_R32_FLOAT, sources.render,
         D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
     output_ = make_texture(device, DXGI_FORMAT_R8G8B8A8_UNORM, sources.output,
         D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET);
     depth_target_.Reset();
     output_view_.Reset();
-    bool created = color_ && depth_ && output_ && SUCCEEDED(device->CreateRenderTargetView(depth_.Get(), nullptr, &depth_target_)) &&
+    bool created = color_ && previous_ && reactive_ && depth_ && output_ &&
+        SUCCEEDED(device->CreateShaderResourceView(color_.Get(), nullptr, &color_view_)) &&
+        SUCCEEDED(device->CreateShaderResourceView(previous_.Get(), nullptr, &previous_view_)) &&
+        SUCCEEDED(device->CreateRenderTargetView(reactive_.Get(), nullptr, &reactive_target_)) &&
+        SUCCEEDED(device->CreateRenderTargetView(depth_.Get(), nullptr, &depth_target_)) &&
         SUCCEEDED(device->CreateShaderResourceView(output_.Get(), nullptr, &output_view_));
     if (created) {
         render_ = sources.render;
@@ -49,6 +61,16 @@ bool UpscaleInputs::ensure(ID3D11Device* device, const UpscaleSources& sources) 
         color_.Reset();
     }
     return created;
+}
+
+void UpscaleInputs::build_reactive_mask(ID3D11DeviceContext* context, temporal::RenderSize render) noexcept {
+    const float none[4]{};
+    if (previous_valid_)
+        reactive_pass_.render(context, {color_view_.Get(), previous_view_.Get(), targets_.motion(), reactive_target_.Get()}, render);
+    else
+        context->ClearRenderTargetView(reactive_target_.Get(), none);
+    context->CopyResource(previous_.Get(), color_.Get());
+    previous_valid_ = true;
 }
 
 std::optional<upscale::FrameResources> UpscaleInputs::prepare(ID3D11DeviceContext* context,
@@ -66,6 +88,7 @@ std::optional<upscale::FrameResources> UpscaleInputs::prepare(ID3D11DeviceContex
     motion_.render(context, {targets_.depth(), camera, targets_.motion_target()}, sources.render);
     depth_pass_.render(context, {targets_.depth(), depth_target_.Get()}, sources.render);
     context->CopyResource(color_.Get(), sources.color);
-    return upscale::FrameResources{color_.Get(), depth_.Get(), targets_.motion_texture(), output_.Get()};
+    build_reactive_mask(context, sources.render);
+    return upscale::FrameResources{color_.Get(), depth_.Get(), targets_.motion_texture(), output_.Get(), reactive_.Get()};
 }
 }

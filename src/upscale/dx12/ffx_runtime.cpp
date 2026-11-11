@@ -112,6 +112,7 @@ UpscaleStatus FfxRuntime::dispatch(const FfxInputs& inputs, const FrameContract&
     dispatch.depth = resource(inputs.depth, FFX_API_RESOURCE_STATE_COMMON);
     dispatch.motionVectors = resource(inputs.motion, FFX_API_RESOURCE_STATE_COMMON);
     dispatch.output = resource(inputs.output, FFX_API_RESOURCE_STATE_UNORDERED_ACCESS);
+    if (inputs.reactive) dispatch.reactive = resource(inputs.reactive, FFX_API_RESOURCE_STATE_COMMON);
     dispatch.jitterOffset = {contract.jitter.x, contract.jitter.y};
     dispatch.motionVectorScale = {1.0f, 1.0f};
     dispatch.renderSize = {contract.render.width, contract.render.height};

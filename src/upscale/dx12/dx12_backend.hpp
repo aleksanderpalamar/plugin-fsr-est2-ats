@@ -13,6 +13,7 @@ inline constexpr DXGI_FORMAT dx12_color_format = DXGI_FORMAT_R8G8B8A8_UNORM;
 inline constexpr DXGI_FORMAT dx12_depth_format = DXGI_FORMAT_R32_FLOAT;
 inline constexpr DXGI_FORMAT dx12_motion_format = DXGI_FORMAT_R16G16_FLOAT;
 inline constexpr DXGI_FORMAT dx12_output_format = DXGI_FORMAT_R8G8B8A8_UNORM;
+inline constexpr DXGI_FORMAT dx12_reactive_format = DXGI_FORMAT_R8_UNORM;
 
 class Dx12Backend final : public UpscalingBackend {
 public:
@@ -28,7 +29,7 @@ private:
     UpscaleStatus prepare() noexcept;
     UpscaleStatus create_textures(const OpenParameters& parameters) noexcept;
     bool accepts(const FrameContract& contract, const FrameResources& resources) const noexcept;
-    UpscaleStatus record(const FrameContract& contract) noexcept;
+    UpscaleStatus record(const FrameContract& contract, bool use_reactive) noexcept;
 
     Microsoft::WRL::ComPtr<ID3D11Device5> device_;
     Microsoft::WRL::ComPtr<ID3D11DeviceContext4> context_;
@@ -40,6 +41,7 @@ private:
     std::optional<SharedTexture> depth_;
     std::optional<SharedTexture> motion_;
     std::optional<SharedTexture> output_;
+    std::optional<SharedTexture> reactive_;
     std::uint64_t fence_value_ = 0;
     std::string name_;
 };

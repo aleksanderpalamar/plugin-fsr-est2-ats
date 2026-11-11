@@ -42,6 +42,13 @@ int motion_case() {
     return std::fabs(stats.fraction_over_eight - 0.5f) < 1e-6f ? 0 : 44;
 }
 
+int grey_case() {
+    const std::array<std::uint8_t, 4> values{0, 64, 128, 255};
+    auto image = grey_image(values, 2, 2);
+    if (image.bytes.size() != 12 || image.bytes[3] != 64 || image.bytes[5] != 64 || image.bytes[11] != 255) return 60;
+    return std::fabs(reactive_fraction(values) - 0.5f) < 1e-6f && reactive_fraction({}) == 0.0f ? 0 : 61;
+}
+
 int luma_case() {
     RgbImage image{2, 1, {0, 0, 0, 255, 255, 255}};
     return std::fabs(mean_luma(image) - 127.5f) < 1e-3f ? 0 : 50;
@@ -49,7 +56,7 @@ int luma_case() {
 }
 
 int main() {
-    for (auto test_case : {half_case, rgba_case, depth_case, motion_case, luma_case}) {
+    for (auto test_case : {half_case, rgba_case, depth_case, motion_case, grey_case, luma_case}) {
         if (int code = test_case(); code != 0) {
             std::cerr << "capture_images case failed: " << code << '\n';
             return code;

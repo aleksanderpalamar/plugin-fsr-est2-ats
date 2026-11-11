@@ -4,9 +4,12 @@
 
 namespace neuralfx {
 namespace {
+constexpr float cabin_depth_threshold = 0.5f;
+
 struct MotionParameters {
     float size[2];
-    float padding[2];
+    float cabin_depth;
+    float padding;
 };
 static_assert(sizeof(MotionParameters) == 16);
 }
@@ -28,7 +31,7 @@ HRESULT CameraMotionPass::initialize(ID3D11Device* device, const std::filesystem
 void CameraMotionPass::render(ID3D11DeviceContext* context, const CameraMotionTargets& targets,
     temporal::RenderSize size) noexcept {
     if (!context || !pixel_ || !constants_ || !targets.depth || !targets.camera || !targets.output) return;
-    MotionParameters parameters{{static_cast<float>(size.width), static_cast<float>(size.height)}, {}};
+    MotionParameters parameters{{static_cast<float>(size.width), static_cast<float>(size.height)}, cabin_depth_threshold, 0.0f};
     context->UpdateSubresource(constants_.Get(), 0, nullptr, &parameters, 0, 0);
     draw_fullscreen(context, {vertex_.Get(), pixel_.Get(), {targets.depth, targets.camera, nullptr},
         targets.output, constants_.Get(), nullptr, size.width, size.height});

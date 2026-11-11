@@ -5,7 +5,8 @@ StructuredBuffer<CameraFrame> camera_frame : register(t1);
 
 cbuffer MotionParameters : register(b0) {
     float2 render_size;
-    float2 parameters_padding;
+    float cabin_depth;
+    float parameters_padding;
 };
 
 float4 MotionMain(float4 position : SV_Position) : SV_Target {
@@ -13,6 +14,8 @@ float4 MotionMain(float4 position : SV_Position) : SV_Target {
     if (camera.valid == 0)
         return float4(0.0, 0.0, 0.0, 0.0);
     float depth = depth_texture.Load(int3(position.xy, 0));
+    if (depth >= cabin_depth)
+        return float4(0.0, 0.0, 0.0, 0.0);
     float2 current = position.xy - camera.jitter;
     float2 ndc = float2(current.x / render_size.x * 2.0 - 1.0, 1.0 - current.y / render_size.y * 2.0);
     float4 clip = mul(camera.reprojection, float4(ndc, depth, 1.0));

@@ -27,3 +27,27 @@ add_test(NAME neuralfx_dx12_backend_tests COMMAND neuralfx_dx12_backend_tests)
 set_tests_properties(neuralfx_dx12_backend_tests PROPERTIES SKIP_RETURN_CODE 77)
 target_link_libraries(neuralfx_upscale_host PUBLIC neuralfx_upscale_dx12)
 target_compile_definitions(neuralfx_upscale_host PRIVATE NEURALFX_HAS_FSR_DX12)
+
+add_executable(neuralfx_upscale_stage_real_tests
+    tests/upscale_stage_tests.cpp
+    src/dxgi/context_hook.cpp
+    src/dxgi/depth_capture.cpp
+    src/renderer/depth_format.cpp
+    src/renderer/context_state.cpp
+    src/renderer/fullscreen_draw.cpp
+    src/gpu/shader_compiler.cpp
+    src/common/logger.cpp
+)
+target_compile_definitions(neuralfx_upscale_stage_real_tests PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX
+    NEURALFX_REAL_BACKEND)
+target_include_directories(neuralfx_upscale_stage_real_tests PRIVATE src)
+target_link_libraries(neuralfx_upscale_stage_real_tests PRIVATE neuralfx_upscale_host neuralfx_temporal_d3d11
+    neuralfx_trace_d3d11 ${D3DCOMPILER_LIBRARY} user32)
+add_custom_command(TARGET neuralfx_upscale_stage_real_tests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${NEURALFX_FSR_SDK_DIR}/signedbin/amd_fidelityfx_loader_dx12.dll
+        ${NEURALFX_FSR_SDK_DIR}/signedbin/amd_fidelityfx_upscaler_dx12.dll
+        $<TARGET_FILE_DIR:neuralfx_upscale_stage_real_tests>)
+add_dependencies(neuralfx_upscale_stage_real_tests neuralfx_runtime_assets)
+add_test(NAME neuralfx_upscale_stage_real_tests COMMAND neuralfx_upscale_stage_real_tests)
+set_tests_properties(neuralfx_upscale_stage_real_tests PROPERTIES SKIP_RETURN_CODE 77)

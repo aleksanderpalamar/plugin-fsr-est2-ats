@@ -24,6 +24,10 @@ struct FrameContract {
     bool reset = false;
 };
 
+enum class ContractFault { None, Sizes, Numbers, Camera, Inputs };
+
+ContractFault diagnose(const FrameContract& contract) noexcept;
 UpscaleStatus validate(const FrameContract& contract) noexcept;
+const char* fault_name(ContractFault fault) noexcept;
 const char* status_name(UpscaleStatus status) noexcept;
 }

@@ -92,6 +92,8 @@ temporal::DrawDecision UpscaleStage::on_resolve(ID3D11DeviceContext* context, co
     bool wanted = ready_ && vertical_fov_ > 0.0f && same(*event.render, opened_render_) && tracker_.predict(event.frame);
     auto result = replacement_.apply(context, *event.render, wanted);
     replaced_ = result == ReplacementResult::Replaced;
+    if (replaced_) ++counters_.replaced;
+    if (wanted && !replaced_) ++counters_.not_replaced;
     if (wanted && !replaced_) note(std::string("resolve not replaced: ") + replacement_name(result));
     return replaced_ ? temporal::DrawDecision::Skip : temporal::DrawDecision::Proceed;
 }
@@ -125,22 +127,38 @@ FrameContract UpscaleStage::contract_for(const temporal::PassEvent& event, tempo
     return contract;
 }
 
+void UpscaleStage::report_failure(UpscaleStatus status, const FrameContract& contract) noexcept {
+    auto fault = diagnose(contract);
+    if (status != UpscaleStatus::InvalidInput) ++counters_.failed;
+    else if (fault != ContractFault::None) ++counters_.contract_invalid;
+    else ++counters_.backend_invalid;
+    note(std::string("frame not upscaled: ") + status_name(status) + " contract=" + fault_name(fault) +
+        " render=" + std::to_string(contract.render.width) + "x" + std::to_string(contract.render.height) +
+        " output=" + std::to_string(contract.output.width) + "x" + std::to_string(contract.output.height) +
+        " jitter=" + std::to_string(contract.jitter.x) + "," + std::to_string(contract.jitter.y) +
+        " fov=" + std::to_string(contract.camera.vertical_fov) + " frame_ms=" + std::to_string(contract.frame_time_ms));
+}
+
 temporal::DrawDecision UpscaleStage::on_output(ID3D11DeviceContext* context, const temporal::PassEvent& event) noexcept {
     auto found = bindings(context);
     if (!event.render || !found || !same(size_of(found->color.Get()), *event.render)) return temporal::DrawDecision::Proceed;
     auto output = size_of(found->backbuffer.Get());
+    ++counters_.outputs;
+    if (summary_due(counters_.outputs)) log(counters_line(counters_));
     if (!ensure_session(*event.render, output) || !replaced_ || !event.depth || !event.resolve)
         return temporal::DrawDecision::Proceed;
     auto jitter = tracker_.predict(event.frame);
     if (!jitter) return temporal::DrawDecision::Proceed;
     auto resources = inputs_.prepare(context, {found->color.Get(), event.depth.Get(), event.resolve.Get(), *event.render, output});
     if (!resources) return temporal::DrawDecision::Proceed;
-    auto status = session_.process(contract_for(event, output, *jitter), *resources);
+    auto contract = contract_for(event, output, *jitter);
+    auto status = session_.process(contract, *resources);
     if (status != UpscaleStatus::Ready) {
-        note(std::string("frame not upscaled: ") + status_name(status));
+        report_failure(status, contract);
         if (session_.report().state == SessionState::Failed) ready_ = false;
         return temporal::DrawDecision::Proceed;
     }
+    ++counters_.upscaled;
     pending_reset_ = false;
     ContextState saved(context);
     blit_.render(context, inputs_.output_view(), found->target.Get(), output);

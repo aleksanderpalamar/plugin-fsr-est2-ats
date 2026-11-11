@@ -24,12 +24,28 @@ bool numbers_valid(const FrameContract& contract) {
 }
 }
 
-UpscaleStatus validate(const FrameContract& contract) noexcept {
-    if (!sizes_valid(contract) || !numbers_valid(contract) || !camera_valid(contract.camera))
-        return UpscaleStatus::InvalidInput;
+ContractFault diagnose(const FrameContract& contract) noexcept {
+    if (!sizes_valid(contract)) return ContractFault::Sizes;
+    if (!numbers_valid(contract)) return ContractFault::Numbers;
+    if (!camera_valid(contract.camera)) return ContractFault::Camera;
     if (contract.inputs != InputAvailability::Complete || contract.motion != MotionQuality::Valid)
-        return UpscaleStatus::InvalidInput;
-    return UpscaleStatus::Ready;
+        return ContractFault::Inputs;
+    return ContractFault::None;
+}
+
+UpscaleStatus validate(const FrameContract& contract) noexcept {
+    return diagnose(contract) == ContractFault::None ? UpscaleStatus::Ready : UpscaleStatus::InvalidInput;
+}
+
+const char* fault_name(ContractFault fault) noexcept {
+    switch (fault) {
+    case ContractFault::None: return "none";
+    case ContractFault::Sizes: return "sizes";
+    case ContractFault::Numbers: return "numbers";
+    case ContractFault::Camera: return "camera";
+    case ContractFault::Inputs: return "inputs";
+    }
+    return "unknown";
 }
 
 const char* status_name(UpscaleStatus status) noexcept {

@@ -76,6 +76,32 @@ int camera_case() {
     return validate(contract) == UpscaleStatus::InvalidInput ? 0 : 74;
 }
 
+int diagnose_case() {
+    if (diagnose(valid_contract()) != ContractFault::None) return 80;
+    auto contract = valid_contract();
+    contract.render = {2000, 1080};
+    if (diagnose(contract) != ContractFault::Sizes) return 81;
+    contract = valid_contract();
+    contract.frame_time_ms = 0.0f;
+    if (diagnose(contract) != ContractFault::Numbers) return 82;
+    contract = valid_contract();
+    contract.jitter = {2.0f, 0.0f};
+    if (diagnose(contract) != ContractFault::Numbers) return 83;
+    contract = valid_contract();
+    contract.camera.vertical_fov = 0.0f;
+    if (diagnose(contract) != ContractFault::Camera) return 84;
+    contract = valid_contract();
+    contract.inputs = InputAvailability::NoDepth;
+    if (diagnose(contract) != ContractFault::Inputs) return 85;
+    contract = valid_contract();
+    contract.motion = MotionQuality::Invalid;
+    if (diagnose(contract) != ContractFault::Inputs) return 86;
+    if (std::string(fault_name(ContractFault::None)) != "none" || std::string(fault_name(ContractFault::Sizes)) != "sizes" ||
+        std::string(fault_name(ContractFault::Numbers)) != "numbers" || std::string(fault_name(ContractFault::Camera)) != "camera" ||
+        std::string(fault_name(ContractFault::Inputs)) != "inputs") return 87;
+    return 0;
+}
+
 int reset_case() {
     auto contract = valid_contract();
     contract.reset = true;
@@ -93,7 +119,7 @@ int names_case() {
 }
 
 int main() {
-    for (auto test_case : {ready_case, sizes_case, inputs_case, numbers_case, camera_case, reset_case, names_case}) {
+    for (auto test_case : {ready_case, sizes_case, inputs_case, numbers_case, camera_case, diagnose_case, reset_case, names_case}) {
         if (int code = test_case(); code != 0) {
             std::cerr << "frame_contract case failed: " << code << '\n';
             return code;

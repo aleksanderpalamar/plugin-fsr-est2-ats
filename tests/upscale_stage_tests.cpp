@@ -5,6 +5,10 @@
 #include "temporal/jitter_sequence.hpp"
 #include "upscale/upscale_stage.hpp"
 
+#ifdef NEURALFX_REAL_BACKEND
+#include "upscale/dx12/dx12_backend.hpp"
+#endif
+
 #include <cmath>
 #include <iostream>
 #include <thread>
@@ -121,6 +125,28 @@ int main() {
     gpu.swapchain->GetBuffer(0, IID_PPV_ARGS(&backbuffer));
     gpu.device->CreateRenderTargetView(backbuffer.Get(), nullptr, &back_view);
     targets.output = back_view;
+#ifdef NEURALFX_REAL_BACKEND
+    upscale::Dx12Backend backend(gpu.device.Get(), gpu.context.Get(), neuralfx::module_directory());
+    if (backend.providers().empty()) return 77;
+    upscale::UpscaleStage stage(backend, upscale::UpscaleMode::Auto);
+    if (FAILED(stage.initialize(gpu.device.Get(), neuralfx::module_directory() / L"NeuralFX" / L"shaders"))) return 4;
+    auto& tracker = temporal::scene_tracker();
+    tracker.attach(&stage);
+    tracker.set_active(true);
+    for (int frame = 0; frame < 80; ++frame) {
+        clear_inputs(gpu, targets, back_view.Get());
+        stage.begin_frame();
+        tracker.start_frame(backbuffer.Get());
+        game_frame(gpu, targets, true);
+        gpu.context->Flush();
+        stage.observe(tracker.finish_frame(gpu.context.Get()));
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    }
+    neuralfx::log(upscale::counters_line(stage.counters()));
+    const auto& counters = stage.counters();
+    if (counters.upscaled == 0) return 20;
+    if (counters.contract_invalid != 0 || counters.backend_invalid != 0 || counters.failed != 0) return 21;
+#else
     RecordingBackend backend;
     backend.context = gpu.context.Get();
     backend.device = gpu.device.Get();
@@ -159,6 +185,7 @@ int main() {
         contract.camera.far_plane != 1600.0f) return 13;
     if (!contract.reset) return 14;
     if (!backend.opened.depth_inverted || !backend.opened.color_non_linear) return 15;
+#endif
     DestroyWindow(window);
     return 0;
 }

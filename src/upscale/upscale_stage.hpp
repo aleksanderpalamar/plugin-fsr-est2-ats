@@ -5,6 +5,7 @@
 #include "temporal/jitter_tracker.hpp"
 #include "temporal/scene_tracker.hpp"
 #include "upscale/resolve_replacement.hpp"
+#include "upscale/upscale_counters.hpp"
 #include "upscale/upscale_session.hpp"
 #include "temporal/camera_continuity.hpp"
 
@@ -21,6 +22,7 @@ public:
     void begin_frame() noexcept;
     void observe(const temporal::SceneSample& sample) noexcept;
     const SessionReport& report() const noexcept { return session_.report(); }
+    const UpscaleCounters& counters() const noexcept { return counters_; }
 
 private:
     temporal::DrawDecision on_resolve(ID3D11DeviceContext* context, const temporal::PassEvent& event) noexcept;
@@ -28,6 +30,7 @@ private:
     bool ensure_session(temporal::RenderSize render, temporal::RenderSize output) noexcept;
     FrameContract contract_for(const temporal::PassEvent& event, temporal::RenderSize output, temporal::Jitter jitter) noexcept;
     void note(const std::string& message) noexcept;
+    void report_failure(UpscaleStatus status, const FrameContract& contract) noexcept;
 
     UpscaleSession session_;
     UpscaleInputs inputs_;
@@ -43,5 +46,6 @@ private:
     bool pending_reset_ = true;
     bool ready_ = false;
     std::uint64_t notes_ = 0;
+    UpscaleCounters counters_;
 };
 }

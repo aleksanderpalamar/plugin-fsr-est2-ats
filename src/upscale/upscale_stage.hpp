@@ -1,9 +1,12 @@
 #pragma once
 
+#include "common/logger.hpp"
+#include "diagnostics/trace_trigger.hpp"
 #include "renderer/blit_pass.hpp"
 #include "renderer/upscale_inputs.hpp"
 #include "temporal/jitter_tracker.hpp"
 #include "temporal/scene_tracker.hpp"
+#include "upscale/frame_capture.hpp"
 #include "upscale/resolve_replacement.hpp"
 #include "upscale/upscale_counters.hpp"
 #include "upscale/upscale_session.hpp"
@@ -34,6 +37,8 @@ private:
     void report_failure(UpscaleStatus status, const FrameContract& contract) noexcept;
 
     UpscaleSession session_;
+    FrameCapture capture_{module_directory() / L"NeuralFX" / L"captures"};
+    diagnostics::TraceTrigger capture_request_{module_directory() / L"NeuralFX" / L"fsr-capture"};
     UpscaleInputs inputs_;
     BlitPass blit_;
     ResolveReplacement replacement_;

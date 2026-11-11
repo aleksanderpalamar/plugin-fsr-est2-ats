@@ -65,6 +65,7 @@ void UpscaleStage::note(const std::string& message) noexcept {
 
 void UpscaleStage::begin_frame() noexcept {
     replaced_ = false;
+    if (capture_request_.poll(Clock::now()) == diagnostics::TriggerResult::Requested) capture_.request();
 }
 
 void UpscaleStage::observe(const temporal::SceneSample& sample) noexcept {
@@ -169,6 +170,7 @@ temporal::DrawDecision UpscaleStage::on_output(ID3D11DeviceContext* context, con
     }
     ++counters_.upscaled;
     pending_reset_ = false;
+    if (capture_.pending()) capture_.write(context, *resources, contract);
     ContextState saved(context);
     blit_.render(context, inputs_.output_view(), found->target.Get(), output);
     return temporal::DrawDecision::Skip;

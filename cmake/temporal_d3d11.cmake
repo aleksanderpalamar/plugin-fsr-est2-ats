@@ -2,11 +2,11 @@ add_library(neuralfx_upscale_host STATIC src/upscale/resolve_replacement.cpp src
     src/upscale/upscale_runtime.cpp src/dxgi/swapchain_access.cpp
     src/renderer/upscale_inputs.cpp src/renderer/blit_pass.cpp src/renderer/depth_to_float_pass.cpp
     src/renderer/resolve_frame_pass.cpp src/renderer/camera_frame_slot.cpp src/renderer/camera_motion_pass.cpp
-    src/renderer/motion_targets.cpp src/renderer/compute_state.cpp)
+    src/renderer/motion_targets.cpp src/renderer/compute_state.cpp src/upscale/frame_capture.cpp)
 target_compile_features(neuralfx_upscale_host PUBLIC cxx_std_20)
 target_compile_definitions(neuralfx_upscale_host PUBLIC UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
 target_include_directories(neuralfx_upscale_host PUBLIC src)
-target_link_libraries(neuralfx_upscale_host PUBLIC neuralfx_upscale neuralfx_temporal neuralfx_temporal_d3d11 d3d11 ${D3DCOMPILER_LIBRARY})
+target_link_libraries(neuralfx_upscale_host PUBLIC neuralfx_upscale neuralfx_diagnostics neuralfx_temporal neuralfx_temporal_d3d11 d3d11 ${D3DCOMPILER_LIBRARY})
 add_library(neuralfx_temporal_d3d11 STATIC src/temporal/scene_tracker.cpp src/temporal/camera_capture.cpp
     src/temporal/scene_hooks.cpp src/temporal/bound_constants.cpp src/temporal/staging_ring.cpp
     src/temporal/resolve_capture.cpp)

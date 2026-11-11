@@ -7,13 +7,31 @@
 #endif
 
 #include <cmath>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 #include <thread>
 
 using namespace stage_test;
 
 namespace {
 constexpr temporal::RenderSize output_size{32, 32};
+
+#ifndef NEURALFX_REAL_BACKEND
+std::vector<unsigned char> read_file(const std::filesystem::path& path) {
+    std::ifstream file(path, std::ios::binary);
+    return {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+}
+
+int check_capture(const std::filesystem::path& directory) {
+    auto output = read_file(directory / "fsr-1-output.bmp");
+    if (output.size() != 54 + 32 * 32 * 3) return 20;
+    if (output[54] != 0 || output[55] != 255 || output[56] != 0) return 21;
+    if (read_file(directory / "fsr-1-color.bmp").size() != 54 + render_height * render_width * 3) return 22;
+    if (read_file(directory / "fsr-1-depth.bmp").size() != 54 + render_height * render_width * 3) return 23;
+    return read_file(directory / "fsr-1-motion.bmp").size() == 54 + render_height * render_width * 3 ? 0 : 24;
+}
+#endif
 }
 
 int main() {
@@ -64,6 +82,9 @@ int main() {
     auto& tracker = temporal::scene_tracker();
     tracker.attach(&stage);
     tracker.set_active(true);
+    auto captures = neuralfx::module_directory() / L"NeuralFX" / L"captures";
+    std::filesystem::remove_all(captures);
+    std::ofstream(neuralfx::module_directory() / L"NeuralFX" / L"fsr-capture").close();
     bool upscaled = false;
     for (int frame = 0; frame < 60 && !upscaled; ++frame) {
         clear_inputs(gpu, targets, back_view.Get());
@@ -94,6 +115,7 @@ int main() {
         contract.camera.far_plane != 1600.0f) return 13;
     if (!contract.reset) return 14;
     if (!backend.opened.depth_inverted || !backend.opened.color_non_linear) return 15;
+    if (int code = check_capture(captures); code != 0) return code;
 #endif
     DestroyWindow(window);
     return 0;

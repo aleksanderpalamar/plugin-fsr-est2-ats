@@ -14,7 +14,7 @@ target_compile_features(neuralfx_upscale_dx12 PUBLIC cxx_std_20)
 target_compile_definitions(neuralfx_upscale_dx12 PUBLIC UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
 target_include_directories(neuralfx_upscale_dx12 PUBLIC src
     ${NEURALFX_FSR_SDK_DIR}/api/include ${NEURALFX_FSR_SDK_DIR}/upscalers/include)
-target_link_libraries(neuralfx_upscale_dx12 PUBLIC neuralfx_upscale d3d11 d3d12 dxgi dxguid)
+target_link_libraries(neuralfx_upscale_dx12 PUBLIC neuralfx_upscale d3d11 d3d12 dxguid)
 
 add_executable(neuralfx_dx12_backend_tests tests/dx12_backend_tests.cpp src/common/logger.cpp)
 target_link_libraries(neuralfx_dx12_backend_tests PRIVATE neuralfx_upscale_dx12)
@@ -25,3 +25,5 @@ add_custom_command(TARGET neuralfx_dx12_backend_tests POST_BUILD
         $<TARGET_FILE_DIR:neuralfx_dx12_backend_tests>)
 add_test(NAME neuralfx_dx12_backend_tests COMMAND neuralfx_dx12_backend_tests)
 set_tests_properties(neuralfx_dx12_backend_tests PROPERTIES SKIP_RETURN_CODE 77)
+target_link_libraries(neuralfx_upscale_host PUBLIC neuralfx_upscale_dx12)
+target_compile_definitions(neuralfx_upscale_host PRIVATE NEURALFX_HAS_FSR_DX12)

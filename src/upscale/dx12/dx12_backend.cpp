@@ -6,13 +6,11 @@ namespace neuralfx::upscale {
 namespace {
 using Microsoft::WRL::ComPtr;
 
-std::optional<LUID> adapter_of(ID3D11Device* device) {
+ComPtr<IDXGIAdapter> adapter_of(ID3D11Device* device) {
     ComPtr<IDXGIDevice> dxgi;
     ComPtr<IDXGIAdapter> adapter;
-    if (FAILED(device->QueryInterface(IID_PPV_ARGS(&dxgi))) || FAILED(dxgi->GetAdapter(&adapter))) return std::nullopt;
-    DXGI_ADAPTER_DESC description{};
-    if (FAILED(adapter->GetDesc(&description))) return std::nullopt;
-    return description.AdapterLuid;
+    if (FAILED(device->QueryInterface(IID_PPV_ARGS(&dxgi))) || FAILED(dxgi->GetAdapter(&adapter))) return nullptr;
+    return adapter;
 }
 
 bool create_texture(std::optional<SharedTexture>& slot, ID3D11Device* host, ID3D12Device* device, DXGI_FORMAT format,
@@ -38,7 +36,7 @@ UpscaleStatus Dx12Backend::prepare() noexcept {
     if (!fence_ && FAILED(device_->CreateFence(0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(&fence_))))
         return UpscaleStatus::Unsupported;
     if (FAILED(fence_->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, &handle))) return UpscaleStatus::Unsupported;
-    dx12_ = Dx12Context::create(*adapter, handle);
+    dx12_ = Dx12Context::create(adapter.Get(), handle);
     CloseHandle(handle);
     return dx12_ ? UpscaleStatus::Ready : UpscaleStatus::UnavailableDependency;
 }

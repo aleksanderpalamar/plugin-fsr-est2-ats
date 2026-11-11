@@ -31,6 +31,11 @@ struct Targets {
     ComPtr<ID3D11Buffer> camera;
     ComPtr<ID3D11Buffer> resolve;
     ComPtr<ID3D11RenderTargetView> output;
+    ComPtr<ID3D11Texture2D> current_color;
+    ComPtr<ID3D11RenderTargetView> current_color_target;
+    ComPtr<ID3D11ShaderResourceView> current_color_view;
+    ComPtr<ID3D11Texture2D> tonemapped;
+    ComPtr<ID3D11ShaderResourceView> tonemapped_view;
 };
 
 inline ComPtr<ID3D11Texture2D> scene_texture(ID3D11Device* device, DXGI_FORMAT format, UINT bind) {
@@ -62,6 +67,16 @@ inline bool create_resolve(ID3D11Device* device, const ResolveValues& values, Co
     return SUCCEEDED(device->CreateBuffer(&description, &data, &resolve));
 }
 
+inline bool create_post_inputs(ID3D11Device* device, Targets& targets) {
+    targets.current_color = scene_texture(device, DXGI_FORMAT_R16G16B16A16_FLOAT,
+        D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+    targets.tonemapped = scene_texture(device, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, D3D11_BIND_SHADER_RESOURCE);
+    if (!targets.current_color || !targets.tonemapped) return false;
+    return SUCCEEDED(device->CreateRenderTargetView(targets.current_color.Get(), nullptr, &targets.current_color_target)) &&
+        SUCCEEDED(device->CreateShaderResourceView(targets.current_color.Get(), nullptr, &targets.current_color_view)) &&
+        SUCCEEDED(device->CreateShaderResourceView(targets.tonemapped.Get(), nullptr, &targets.tonemapped_view));
+}
+
 inline bool create_targets(ID3D11Device* device, const CameraValues& values, Targets& targets,
     const ResolveValues& resolve = resolve_pattern()) {
     for (auto& view : targets.geometry) if (!color_target(device, view)) return false;
@@ -71,7 +86,8 @@ inline bool create_targets(ID3D11Device* device, const CameraValues& values, Tar
     D3D11_DEPTH_STENCIL_VIEW_DESC view{DXGI_FORMAT_D32_FLOAT_S8X24_UINT, D3D11_DSV_DIMENSION_TEXTURE2D, 0, {}};
     if (!targets.depth || FAILED(device->CreateDepthStencilView(targets.depth.Get(), &view, &targets.depth_view)))
         return false;
-    return create_camera(device, values, targets.camera) && create_resolve(device, resolve, targets.resolve);
+    return create_camera(device, values, targets.camera) && create_resolve(device, resolve, targets.resolve) &&
+        create_post_inputs(device, targets);
 }
 
 inline void bind_and_draw(ID3D11DeviceContext* context, std::span<const ComPtr<ID3D11RenderTargetView>> views,
@@ -97,9 +113,13 @@ inline void game_frame(Device& gpu, const Targets& targets, bool temporal_resolv
     UINT resolve_first = resolve_offset;
     UINT resolve_count = 16;
     context->PSSetConstantBuffers1(0, 1, &resolve, &resolve_first, &resolve_count);
+    ID3D11ShaderResourceView* current = targets.current_color_view.Get();
+    context->PSSetShaderResources(0, 1, &current);
     bind_and_draw(gpu.context.Get(), targets.lighting, nullptr);
     if (!targets.output) return;
     ID3D11RenderTargetView* output = targets.output.Get();
+    ID3D11ShaderResourceView* tonemapped = targets.tonemapped_view.Get();
+    gpu.context->PSSetShaderResources(0, 1, &tonemapped);
     gpu.context->OMSetRenderTargets(1, &output, nullptr);
     gpu.context->DrawIndexed(3, 0, 0);
     gpu.context->DrawIndexed(3, 0, 0);

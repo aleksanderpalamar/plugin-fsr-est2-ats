@@ -1,3 +1,4 @@
+#include "upscale/upscale_runtime.hpp"
 #include "dxgi/swapchain_hook.hpp"
 #include "dxgi/context_hook.hpp"
 #include "dxgi/vtable_patch.hpp"
@@ -71,11 +72,13 @@ HRESULT STDMETHODCALLTYPE on_present(IDXGISwapChain* swapchain, UINT interval, U
         log("Unexpected exception in Present hook");
     }
     present_steam_screenshot(swapchain, frame);
+    upscale::upscale_present(swapchain);
     diagnostics::present_motion_probe(swapchain);
     set_plugin_present(false);
     HRESULT result = original_present(swapchain, interval, flags);
     diagnostics::poll_capture_request();
     diagnostics::trace_present_end(swapchain);
+    upscale::upscale_frame_end(swapchain);
     diagnostics::motion_probe_frame_end(swapchain);
     in_hook = false;
     return result;

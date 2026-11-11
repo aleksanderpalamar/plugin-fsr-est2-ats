@@ -4,6 +4,8 @@
 #include "renderer/motion_targets.hpp"
 #include "diagnostics/probe_journal.hpp"
 #include "diagnostics/trace_trigger.hpp"
+#include "dxgi/swapchain_access.hpp"
+#include "upscale/upscale_runtime.hpp"
 #include "renderer/camera_motion_pass.hpp"
 #include "renderer/context_state.hpp"
 #include "renderer/motion_overlay_pass.hpp"
@@ -38,23 +40,15 @@ struct Probe {
     MotionTargets targets;
 };
 
-struct Swapchain {
-    ComPtr<ID3D11Device> device;
-    ComPtr<ID3D11DeviceContext> context;
-    ComPtr<ID3D11Texture2D> backbuffer;
-};
-
 Probe& probe() noexcept {
     static Probe instance;
     return instance;
 }
 
+using Swapchain = SwapchainAccess;
+
 std::optional<Swapchain> swapchain_of(IDXGISwapChain* swapchain) noexcept {
-    Swapchain result;
-    if (!swapchain || FAILED(swapchain->GetDevice(IID_PPV_ARGS(&result.device)))) return std::nullopt;
-    result.device->GetImmediateContext(&result.context);
-    if (FAILED(swapchain->GetBuffer(0, IID_PPV_ARGS(&result.backbuffer))) || !result.context) return std::nullopt;
-    return result;
+    return access_swapchain(swapchain);
 }
 
 bool initialize(Probe& state, ID3D11Device* device) noexcept {
@@ -64,6 +58,10 @@ bool initialize(Probe& state, ID3D11Device* device) noexcept {
 }
 
 void toggle(Probe& state, const Swapchain& target) noexcept {
+    if (upscale::upscale_active() && !state.enabled) {
+        log("Motion probe is unavailable while upscaling is active");
+        return;
+    }
     state.enabled = !state.enabled;
     state.history.reset();
     state.review.reset();

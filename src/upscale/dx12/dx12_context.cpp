@@ -1,6 +1,5 @@
 #include "upscale/dx12/dx12_context.hpp"
 
-#include <dxgi1_4.h>
 #include <new>
 
 namespace neuralfx::upscale {
@@ -12,18 +11,14 @@ Dx12Context::~Dx12Context() {
     if (event_) CloseHandle(event_);
 }
 
-std::unique_ptr<Dx12Context> Dx12Context::create(LUID adapter, HANDLE shared_fence) {
+std::unique_ptr<Dx12Context> Dx12Context::create(IDXGIAdapter* adapter, HANDLE shared_fence) {
     std::unique_ptr<Dx12Context> context(new (std::nothrow) Dx12Context());
     if (context && context->initialize(adapter, shared_fence)) return context;
     return nullptr;
 }
 
-bool Dx12Context::initialize(LUID adapter, HANDLE shared_fence) noexcept {
-    Microsoft::WRL::ComPtr<IDXGIFactory4> factory;
-    Microsoft::WRL::ComPtr<IDXGIAdapter1> dxgi_adapter;
-    if (FAILED(CreateDXGIFactory1(IID_PPV_ARGS(&factory)))) return false;
-    if (FAILED(factory->EnumAdapterByLuid(adapter, IID_PPV_ARGS(&dxgi_adapter)))) return false;
-    if (FAILED(D3D12CreateDevice(dxgi_adapter.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&device_)))) return false;
+bool Dx12Context::initialize(IDXGIAdapter* adapter, HANDLE shared_fence) noexcept {
+    if (FAILED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&device_)))) return false;
     D3D12_COMMAND_QUEUE_DESC description{D3D12_COMMAND_LIST_TYPE_DIRECT, 0, D3D12_COMMAND_QUEUE_FLAG_NONE, 0};
     if (FAILED(device_->CreateCommandQueue(&description, IID_PPV_ARGS(&queue_)))) return false;
     if (FAILED(device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&allocator_)))) return false;

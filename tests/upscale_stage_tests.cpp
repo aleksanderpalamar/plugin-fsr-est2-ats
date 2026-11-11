@@ -24,13 +24,17 @@ std::vector<unsigned char> read_file(const std::filesystem::path& path) {
 }
 
 int check_capture(const std::filesystem::path& directory) {
-    auto output = read_file(directory / "fsr-1-output.bmp");
+    auto output = read_file(directory / "fsr-1-1-output.bmp");
     if (output.size() != 54 + 32 * 32 * 3) return 20;
     if (output[54] != 0 || output[55] != 255 || output[56] != 0) return 21;
-    if (read_file(directory / "fsr-1-color.bmp").size() != 54 + render_height * render_width * 3) return 22;
-    if (read_file(directory / "fsr-1-depth.bmp").size() != 54 + render_height * render_width * 3) return 23;
-    if (read_file(directory / "fsr-1-reactive.bmp").size() != 54 + render_height * render_width * 3) return 25;
-    return read_file(directory / "fsr-1-motion.bmp").size() == 54 + render_height * render_width * 3 ? 0 : 24;
+    const std::size_t render_bmp = 54 + render_height * render_width * 3;
+    for (const char* name : {"color", "depth", "motion", "reactive"})
+        if (read_file(directory / (std::string("fsr-1-1-") + name + ".bmp")).size() != render_bmp) return 22;
+    if (read_file(directory / "fsr-1-1-depth.f32").size() != render_height * render_width * 4) return 23;
+    if (read_file(directory / "fsr-1-1-motion.f16").size() != render_height * render_width * 4) return 24;
+    if (read_file(directory / "fsr-1-3-color.bmp").size() != render_bmp) return 25;
+    if (std::filesystem::exists(directory / "fsr-1-4-color.bmp")) return 26;
+    return read_file(directory / "fsr-1-2-resolve.txt").size() > 100 ? 0 : 27;
 }
 #endif
 }
@@ -87,7 +91,8 @@ int main() {
     std::filesystem::remove_all(captures);
     std::ofstream(neuralfx::module_directory() / L"NeuralFX" / L"fsr-capture").close();
     bool upscaled = false;
-    for (int frame = 0; frame < 60 && !upscaled; ++frame) {
+    upscale::FrameContract first_contract;
+    for (int frame = 0; frame < 60 && backend.upscales < upscale::capture_burst_frames; ++frame) {
         clear_inputs(gpu, targets, back_view.Get());
         stage.begin_frame();
         tracker.start_frame(backbuffer.Get());
@@ -100,6 +105,7 @@ int main() {
         bool green = (*corner)[0] == 0 && (*corner)[1] == 255 && (*corner)[2] == 0;
         if (backend.upscales == before && (*corner)[0] != 255) return 6;
         if (backend.upscales > before) {
+            if (!upscaled) first_contract = backend.last;
             if (!green) return 7;
             if (!holds_current_color(gpu, targets.lighting[0].Get()) || !holds_current_color(gpu, targets.lighting[1].Get()))
                 return 9;
@@ -108,7 +114,7 @@ int main() {
         std::this_thread::sleep_for(std::chrono::milliseconds(2));
     }
     if (!upscaled) return 8;
-    const auto& contract = backend.last;
+    const auto& contract = first_contract;
     if (contract.render.width != render_width || contract.render.height != render_height) return 10;
     if (contract.output.width != output_size.width || contract.output.height != output_size.height) return 11;
     if (!temporal::sequence_phase(contract.jitter)) return 12;

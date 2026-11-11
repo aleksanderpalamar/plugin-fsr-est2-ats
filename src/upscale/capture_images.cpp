@@ -1,7 +1,9 @@
 #include "upscale/capture_images.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstdio>
 #include <cstring>
 
 namespace neuralfx::upscale {
@@ -90,6 +92,48 @@ float reactive_fraction(std::span<const std::uint8_t> values) {
     if (values.empty()) return 0.0f;
     auto marked = std::count_if(values.begin(), values.end(), [](std::uint8_t value) { return value >= 128; });
     return static_cast<float>(marked) / static_cast<float>(values.size());
+}
+
+std::vector<std::uint8_t> stencil_values(std::span<const std::uint8_t> depth_stencil_texels) {
+    std::vector<std::uint8_t> values;
+    values.reserve(depth_stencil_texels.size() / 8);
+    for (std::size_t index = 4; index < depth_stencil_texels.size(); index += 8) values.push_back(depth_stencil_texels[index]);
+    return values;
+}
+
+RgbImage stencil_image(std::span<const std::uint8_t> values, std::uint32_t width, std::uint32_t height) {
+    RgbImage image{width, height, {}};
+    image.bytes.reserve(values.size() * 3);
+    for (std::uint8_t value : values)
+        image.bytes.insert(image.bytes.end(), {static_cast<std::uint8_t>(value * 67), static_cast<std::uint8_t>(value * 131),
+            static_cast<std::uint8_t>(value * 197)});
+    return image;
+}
+
+std::string stencil_histogram(std::span<const std::uint8_t> values) {
+    std::array<std::size_t, 256> counts{};
+    for (std::uint8_t value : values) ++counts[value];
+    std::string text;
+    for (int value = 0; value < 256; ++value) {
+        if (counts[value] == 0) continue;
+        char entry[48];
+        std::snprintf(entry, sizeof(entry), "%s%d:%.3f", text.empty() ? "" : " ", value,
+            static_cast<double>(counts[value]) / static_cast<double>(values.size()));
+        text += entry;
+    }
+    return text;
+}
+
+std::string float_lines(std::span<const float> values, std::size_t per_line) {
+    std::string text;
+    for (std::size_t index = 0; index < values.size(); ++index) {
+        char entry[32];
+        std::snprintf(entry, sizeof(entry), "%.9g", static_cast<double>(values[index]));
+        text += entry;
+        bool last = index + 1 == values.size() || (index + 1) % per_line == 0;
+        text += last ? "\n" : " ";
+    }
+    return text;
 }
 
 float mean_luma(const RgbImage& image) {

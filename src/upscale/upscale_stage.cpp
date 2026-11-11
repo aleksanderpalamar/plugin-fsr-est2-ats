@@ -74,6 +74,7 @@ void UpscaleStage::observe(const temporal::SceneSample& sample) noexcept {
         auto report = temporal::review_resolves(sample.resolves, *sample.frame.render);
         for (const auto& item : report.samples) {
             tracker_.observe({item.frame, item.values.jitter});
+            if (capture_trigger_.observe(item.values.move_m)) capture_.request();
             if (item.values.vertical_fov > 0.0f) vertical_fov_ = item.values.vertical_fov;
             temporal::JumpLimits limits;
             if (item.values.move_m > limits.distance_m || item.values.turn_deg > limits.angle_deg) pending_reset_ = true;
@@ -170,7 +171,8 @@ temporal::DrawDecision UpscaleStage::on_output(ID3D11DeviceContext* context, con
     }
     ++counters_.upscaled;
     pending_reset_ = false;
-    if (capture_.pending()) capture_.write(context, *resources, contract);
+    if (capture_.pending())
+        capture_.write(context, {*resources, contract, event.depth.Get(), event.resolve.Get()});
     ContextState saved(context);
     blit_.render(context, inputs_.output_view(), found->target.Get(), output);
     return temporal::DrawDecision::Skip;

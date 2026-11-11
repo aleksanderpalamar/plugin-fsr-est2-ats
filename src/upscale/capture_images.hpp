@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <span>
+#include <string>
 #include <vector>
 
 namespace neuralfx::upscale {
@@ -26,5 +27,9 @@ RgbImage motion_image(std::span<const std::uint16_t> halves, std::uint32_t width
 MotionStats motion_stats(std::span<const std::uint16_t> halves);
 RgbImage grey_image(std::span<const std::uint8_t> values, std::uint32_t width, std::uint32_t height);
 float reactive_fraction(std::span<const std::uint8_t> values);
+std::vector<std::uint8_t> stencil_values(std::span<const std::uint8_t> depth_stencil_texels);
+RgbImage stencil_image(std::span<const std::uint8_t> values, std::uint32_t width, std::uint32_t height);
+std::string stencil_histogram(std::span<const std::uint8_t> values);
+std::string float_lines(std::span<const float> values, std::size_t per_line);
 float mean_luma(const RgbImage& image);
 }

@@ -7,6 +7,7 @@
 #include "temporal/jitter_tracker.hpp"
 #include "temporal/scene_tracker.hpp"
 #include "upscale/frame_capture.hpp"
+#include "upscale/motion_trigger.hpp"
 #include "upscale/resolve_replacement.hpp"
 #include "upscale/upscale_counters.hpp"
 #include "upscale/upscale_session.hpp"
@@ -37,6 +38,7 @@ private:
     void report_failure(UpscaleStatus status, const FrameContract& contract) noexcept;
 
     UpscaleSession session_;
+    MotionTrigger capture_trigger_;
     FrameCapture capture_{module_directory() / L"NeuralFX" / L"captures"};
     diagnostics::TraceTrigger capture_request_{module_directory() / L"NeuralFX" / L"fsr-capture"};
     UpscaleInputs inputs_;

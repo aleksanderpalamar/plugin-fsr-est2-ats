@@ -49,6 +49,25 @@ int grey_case() {
     return std::fabs(reactive_fraction(values) - 0.5f) < 1e-6f && reactive_fraction({}) == 0.0f ? 0 : 61;
 }
 
+int stencil_case() {
+    std::array<std::uint8_t, 16> texels{};
+    texels[4] = 3;
+    texels[12] = 3;
+    auto values = stencil_values(texels);
+    if (values.size() != 2 || values[0] != 3 || values[1] != 3) return 70;
+    auto image = stencil_image(values, 2, 1);
+    if (image.bytes.size() != 6 || image.bytes[0] != image.bytes[3]) return 71;
+    const std::array<std::uint8_t, 4> mixed{0, 0, 0, 2};
+    auto text = stencil_histogram(mixed);
+    return text == "0:0.750 2:0.250" ? 0 : 72;
+}
+
+int float_text_case() {
+    const std::array<float, 5> values{1.0f, -0.5f, 0.0f, 2.25f, 0.125f};
+    auto text = float_lines(values, 4);
+    return text == "1 -0.5 0 2.25\n0.125\n" ? 0 : 80;
+}
+
 int luma_case() {
     RgbImage image{2, 1, {0, 0, 0, 255, 255, 255}};
     return std::fabs(mean_luma(image) - 127.5f) < 1e-3f ? 0 : 50;
@@ -56,7 +75,7 @@ int luma_case() {
 }
 
 int main() {
-    for (auto test_case : {half_case, rgba_case, depth_case, motion_case, grey_case, luma_case}) {
+    for (auto test_case : {half_case, rgba_case, depth_case, motion_case, grey_case, stencil_case, float_text_case, luma_case}) {
         if (int code = test_case(); code != 0) {
             std::cerr << "capture_images case failed: " << code << '\n';
             return code;

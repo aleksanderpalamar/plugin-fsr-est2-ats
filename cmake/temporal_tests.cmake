@@ -55,7 +55,7 @@ target_link_libraries(neuralfx_resolve_review_tests PRIVATE neuralfx_temporal)
 add_test(NAME neuralfx_resolve_review_tests COMMAND neuralfx_resolve_review_tests)
 add_library(neuralfx_upscale STATIC src/upscale/provider_policy.cpp src/upscale/frame_contract.cpp
     src/upscale/upscale_session.cpp src/upscale/upscale_counters.cpp
-    src/upscale/capture_images.cpp src/upscale/bmp_writer.cpp)
+    src/upscale/capture_images.cpp src/upscale/bmp_writer.cpp src/upscale/motion_trigger.cpp)
 target_compile_features(neuralfx_upscale PUBLIC cxx_std_20)
 target_include_directories(neuralfx_upscale PUBLIC src)
 target_link_libraries(neuralfx_upscale PUBLIC neuralfx_temporal)
@@ -77,3 +77,6 @@ add_test(NAME neuralfx_capture_images_tests COMMAND neuralfx_capture_images_test
 add_executable(neuralfx_bmp_writer_tests tests/bmp_writer_tests.cpp)
 target_link_libraries(neuralfx_bmp_writer_tests PRIVATE neuralfx_upscale)
 add_test(NAME neuralfx_bmp_writer_tests COMMAND neuralfx_bmp_writer_tests)
+add_executable(neuralfx_motion_trigger_tests tests/motion_trigger_tests.cpp)
+target_link_libraries(neuralfx_motion_trigger_tests PRIVATE neuralfx_upscale)
+add_test(NAME neuralfx_motion_trigger_tests COMMAND neuralfx_motion_trigger_tests)
